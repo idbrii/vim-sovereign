@@ -85,7 +85,7 @@ class Repo(object):
         # 
         # Staged (1)
         # A pythonx/seven.py
-        s = self._client.status(optional_path)
+        # staged, unstaged, untracked = self._get_stage_status()
         lines = ['{} {}'.format(self.status_map[status.type], self._to_svnroot_relative_path(status.name)) for status in s]
         return "\n".join(lines)
 
@@ -100,14 +100,11 @@ class Repo(object):
     def _get_stage_status(self):
         """Get the status repo's staged files.
     
-        _get_stage_status() -> str, str, str
+        _get_stage_status() -> list(str), list(str), list(str)
         """
-        def fmt(name, svn_type_str):
-            #	new file:   pythonx/seven.py
-            return '#\t{}:\t{}'.format(svn_type_str, self._to_svnroot_relative_path(name))
-        staged    = ['#\n# Changes to be committed:\n'      ]
-        unstaged  = ['#\n#\n# Changes not staged for commit:\n']
-        untracked = ['#\n#\n# Untracked files:\n'              ]
+        staged    = []
+        unstaged  = []
+        untracked = []
         staged_types = [
             svn.constants.ST_ADDED,
             svn.constants.ST_DELETED,
@@ -115,32 +112,48 @@ class Repo(object):
             svn.constants.ST_REPLACED,
         ]
         for status in self._client.status():
-            txt = fmt(status.name, status.type_raw_name)
             if status.type in staged_types:
-                staged.append(txt)
+                staged.append(status)
             elif status.type == svn.constants.ST_UNVERSIONED:
-                untracked.append(txt)
+                untracked.append(status)
             else:
-                unstaged.append(txt)
+                unstaged.append(status)
+
+        return staged, unstaged, untracked
+
+
+    def _get_stage_status_text(self):
+        """Get the status repo's staged files.
+    
+        _get_stage_status_text() -> str, str, str
+        """
+        def fmt(status):
+            # Print in this style:
+            #	new file:   pythonx/seven.py
+            return '#\t{}:\t{}'.format(status.type_raw_name, self._to_svnroot_relative_path(status.name))
+        staged, unstaged, untracked = self._get_stage_status()
+        staged, unstaged, untracked = [[fmt(status) for status in c] for c in [staged, unstaged, untracked]]
+        staged.insert(0,    '#\n# Changes to be committed:')
+        unstaged.insert(0,  '#\n# Changes not staged for commit:')
+        untracked.insert(0, '#\n# Untracked files:')
 
         def _join_if_has_files(files):
             if len(files) > 1:
-                return "".join(files)
+                return "\n".join(files) + "\n"
             return ""
         staged, unstaged, untracked = [_join_if_has_files(x) for x in [staged, unstaged, untracked]]
         return staged, unstaged, untracked
 
 
     def _commit_text(self):
-        staged, unstaged, untracked = self._get_stage_status()
+        staged, unstaged, untracked = self._get_stage_status_text()
         diff = self._unified_diff(self._root_dir, 'HEAD', '')
         txt = '''
 # Please enter the commit message for your changes. Lines starting
 # with '#' will be ignored, and an empty message aborts the commit.
 #
 # On branch {branch}
-{staged}{unstaged}{untracked}
-#
+{staged}{unstaged}{untracked}#
 # ------------------------ >8 ------------------------
 # Do not modify or remove the line above.
 # Everything below it will be ignored.
