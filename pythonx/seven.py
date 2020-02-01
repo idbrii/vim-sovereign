@@ -85,9 +85,21 @@ class Repo(object):
         # 
         # Staged (1)
         # A pythonx/seven.py
-        # staged, unstaged, untracked = self._get_stage_status()
-        lines = ['{} {}'.format(self.status_map[status.type], self._to_svnroot_relative_path(status.name)) for status in s]
-        return "\n".join(lines)
+
+        def fmt(status):
+            # Print in this style:
+            # M pythonx/seven.py
+            return '{} {}'.format(self.status_map[status.type], self._to_svnroot_relative_path(status.name))
+
+        headers = [
+            '\nStaged ({count})',
+            '\nUnstaged ({count})',
+            '\nUntracked ({count})',
+        ]
+        staged, unstaged, untracked = self._get_stage_status_text(fmt, headers)
+        return """Head: {} 
+{}{}{}
+""".format(self.get_branch(), staged, unstaged, untracked)
 
     def request_stage(self, filepath):
         """Stage the input file.
@@ -122,20 +134,17 @@ class Repo(object):
         return staged, unstaged, untracked
 
 
-    def _get_stage_status_text(self):
+    def _get_stage_status_text(self, fmt, headers):
         """Get the status repo's staged files.
     
         _get_stage_status_text() -> str, str, str
         """
-        def fmt(status):
-            # Print in this style:
-            #	new file:   pythonx/seven.py
-            return '#\t{}:\t{}'.format(status.type_raw_name, self._to_svnroot_relative_path(status.name))
         staged, unstaged, untracked = self._get_stage_status()
-        staged, unstaged, untracked = [[fmt(status) for status in c] for c in [staged, unstaged, untracked]]
-        staged.insert(0,    '#\n# Changes to be committed:')
-        unstaged.insert(0,  '#\n# Changes not staged for commit:')
-        untracked.insert(0, '#\n# Untracked files:')
+        staged, unstaged, untracked = [
+            [headers[i].format(count=len(c))]
+            + [fmt(status)
+               for status in c]
+            for i,c in enumerate([staged, unstaged, untracked])]
 
         def _join_if_has_files(files):
             if len(files) > 1:
@@ -146,7 +155,17 @@ class Repo(object):
 
 
     def _commit_text(self):
-        staged, unstaged, untracked = self._get_stage_status_text()
+        def fmt(status):
+            # Print in this style:
+            #	new file:   pythonx/seven.py
+            return '#\t{}:\t{}'.format(status.type_raw_name, self._to_svnroot_relative_path(status.name))
+
+        headers = [
+            '#\n# Changes to be committed:',
+            '#\n# Changes not staged for commit:',
+            '#\n# Untracked files:',
+        ]
+        staged, unstaged, untracked = self._get_stage_status_text(fmt, headers)
         diff = self._unified_diff(self._root_dir, 'HEAD', '')
         txt = '''
 # Please enter the commit message for your changes. Lines starting
