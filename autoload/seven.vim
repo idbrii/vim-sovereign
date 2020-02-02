@@ -16,7 +16,7 @@ function! seven#status() abort
     let path = expand('%')
     call s:create_scratch()
     "~ let b:fugitive_type = 'index'
-    let cmd = printf('sevenapi.status("%s")', path)
+    let cmd = printf('sevenapi.setup_buffer_status("%s")', path)
     call pyxeval(cmd)
     setfiletype fugitive
 endfunction
@@ -30,7 +30,7 @@ function! seven#commit(...) abort
 
     call s:create_scratch()
     setfiletype gitcommit
-    let cmd = printf('sevenapi.commit("%s")', path)
+    let cmd = printf('sevenapi.setup_buffer_commit("%s")', path)
     call pyxeval(cmd)
 endfunction
 
@@ -50,7 +50,7 @@ function! seven#diff(...) abort
     let old_ft = &l:filetype
     call s:create_scratch()
     let &l:filetype = old_ft
-    let cmd = printf('sevenapi.cat("%s", "%s")', path, revision)
+    let cmd = printf('sevenapi.setup_buffer_cat("%s", "%s")', path, revision)
     let g:DAVID_test = cmd
     call pyxeval(cmd)
     " TODO: depends on diffusable
