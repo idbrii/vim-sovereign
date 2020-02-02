@@ -51,7 +51,6 @@ function! seven#diff(...) abort
     call s:create_scratch()
     let &l:filetype = old_ft
     let cmd = printf('sevenapi.setup_buffer_cat("%s", "%s")', path, revision)
-    let g:DAVID_test = cmd
     call pyxeval(cmd)
     " TODO: depends on diffusable
     DiffBoth
