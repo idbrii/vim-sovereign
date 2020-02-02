@@ -1,20 +1,28 @@
 pyx import seven.vimapi as sevenapi
 
-function! s:create_scratch()
-    if exists(':Scratch') == 2
-        Scratch
+function! s:create_scratch(split_cmd, bufname)
+    if exists(':ScratchNoSplit') == 2
+        exec a:split_cmd
+        silent ScratchNoSplit
+    elseif exists(':Scratch') == 2
+        silent Scratch
     else
-        vnew
+        " TODO: This needs testing.
+        silent exec a:split_cmd .' '. a:bufname
         setlocal buftype=nofile
         setlocal bufhidden=hide
         setlocal noswapfile
         setlocal buflisted
     endif
+
+    if len(a:bufname) > 0
+        call execute('file '. a:bufname)
+    endif
 endf
 
 function! seven#status() abort
     let path = expand('%')
-    call s:create_scratch()
+    call s:create_scratch('split', 'seven-status')
     "~ let b:fugitive_type = 'index'
     let cmd = printf('sevenapi.setup_buffer_status("%s")', path)
     call pyxeval(cmd)
@@ -28,7 +36,8 @@ function! seven#commit(...) abort
         let path = a:000[0]
     endif
 
-    call s:create_scratch()
+    " TODO: Shouldn't be a scratch buffer. Should be a temp file.
+    call s:create_scratch('split', 'seven-commit')
     setfiletype gitcommit
     let cmd = printf('sevenapi.setup_buffer_commit("%s")', path)
     call pyxeval(cmd)
@@ -48,7 +57,7 @@ function! seven#diff(...) abort
     let path = fnamemodify(path, ':p')
 
     let old_ft = &l:filetype
-    call s:create_scratch()
+    call s:create_scratch('vsplit', '')
     let &l:filetype = old_ft
     let cmd = printf('sevenapi.setup_buffer_cat("%s", "%s")', path, revision)
     call pyxeval(cmd)

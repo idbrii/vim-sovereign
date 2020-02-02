@@ -172,8 +172,13 @@ def _get_file_from_line(line):
     return line[file_start+1:]
 
 def edit(linenum, line, how):
+    """Edit the file in the previous window.
+
+    edit(int, str, str) -> None
+    """
     r = repos[vim.current.buffer]
     filepath = p.join(r._root_dir, _get_file_from_line(line))
+    vim.command('wincmd p')
     vim.command(how +' '+ filepath)
 
 def commit(linenum, line, verbose=True):
@@ -186,8 +191,11 @@ def commit(linenum, line, verbose=True):
 
 def diff_item(linenum, line):
     # TODO: Do I want to split? I think I want to switch to the buffer if it's
-    # in a visible window and open the diff, otherwise open a tab?
-    edit(linenum, line, 'silent vsplit')
+    # in a visible window and open the diff, otherwise open a tab? Or replace
+    # an existing window? Maybe the previous one?
+    # Fugitive seems to go back to the previous window, load the file, split,
+    # diff.
+    edit(linenum, line, 'silent botright edit')
     # vim.command('resize') # full height
     vim.command('Sdiff')
 
