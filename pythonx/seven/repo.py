@@ -1,10 +1,19 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 import os.path as p
 import pprint as pp
 import re
 
 import svn.local
+
+def trim_leading_lines(txt, num_newlines):
+    assert num_newlines > 0
+    index = 0
+    for i in range(num_newlines):
+        index = txt.find('\n', index + 1)
+    return txt[index + 1:]
+
+
 
 class SvnError(Exception):
 
@@ -51,11 +60,17 @@ class Repo(object):
         :root_dir: The root directory for the svn repo.
 
         """
-        self._root_dir = p.expanduser(root_dir)
+        self._root_dir = p.abspath(p.expanduser(root_dir))
         self._client = svn.local.LocalClient(self._root_dir)
 
-    def _to_svnroot_relative_path(self, absolute_path):
-        return p.relpath(absolute_path, self._root_dir)
+    def _to_svnroot_relative_path(self, filepath):
+        f = p.expanduser(filepath)
+        # For some reason, relpath still makes me relative to cwd insted of to
+        # the input path. Use relpace instead (expanduser gives us absolute
+        # path).
+        # XX f = p.relpath(f, self._root_dir)
+        f = f.replace(self._root_dir + '/', '')
+        return f
 
     def get_branch(self):
         i = self._client.info()
@@ -186,6 +201,7 @@ class Repo(object):
         return txt
 
     def _unified_diff(self, full_url_or_path, old, new):
+        # self._client.diff('hello', 'HEAD', '')
         # self._client.diff() doesn't work since it tries to give us the diff
         # in a list and I don't wnat ot put it back together again.
         d = self._client.run_command(
@@ -195,7 +211,8 @@ class Repo(object):
              '--new', '{0}@{1}'.format(full_url_or_path, new),
              ],
             do_combine=True)
-        return d.decode('utf8')
+        d = d.decode('utf8')
+        return d
 
     def commit(self):
         """Commit current changes
@@ -214,6 +231,22 @@ class Repo(object):
         else:
             single_file = []
         self._client.update(rel_filepaths, single_file, revision)
+
+    def cat_file(self, filepath, revision):
+        f = self._client.cat(self._to_svnroot_relative_path(filepath), revision)
+        # Why doesn't svn produce utf output?
+        f = f.decode('utf8')
+        # Remove incorrect trailing space
+        return f[:-1]
+
+    def get_buffer_name_for_file(self, filepath, revision):
+        filepath = self._to_svnroot_relative_path(p.expanduser(filepath))
+        print('get_buffer_name_for_file', filepath)
+        i = self._client.info(filepath, revision)
+        name = i['url']
+        colon = name.find(':')
+        assert colon > 0, "Expected url always includes a protocol"
+        return 'seven' + name[colon:]
 
 
 def get_repo(working_copy_file):
@@ -236,8 +269,6 @@ def _find_svnroot_for_file(working_copy_file):
         svn_dir = p.join(directory, '.svn')
         if p.isdir(svn_dir):
             return directory
-        else:
-            print("is not svndir: {}".format(svn_dir))
 
     raise SvnError("Could not find repo for {}".format(working_copy_file))
 
@@ -260,9 +291,17 @@ def test():
     print()
     print('seven#branch()')
     print(r.get_branch())
-    # pp.pprint(r._client.info())
     print()
     print('Scommit')
     print(r._commit_text())
+    print()
+    print('Sdiff')
+    print(r.cat_file('subdir/hastrailingnewline', 'HEAD'))
 
-test()
+    print()
+    print('done')
+
+
+
+if __name__ == "__main__":
+    test()
