@@ -36,8 +36,10 @@ function! seven#commit(...) abort
         let path = a:000[0]
     endif
 
-    " TODO: Shouldn't be a scratch buffer. Should be a temp file.
-    call s:create_scratch('split', 'seven-commit')
+    let f = tempname() . '_commit'
+    call execute('split '. f)
+    wincmd _
+    " We copy git formatting, so use their syntax.
     setfiletype gitcommit
     let cmd = printf('sevenapi.setup_buffer_commit("%s")', path)
     call pyxeval(cmd)
