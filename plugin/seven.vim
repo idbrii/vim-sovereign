@@ -5,5 +5,6 @@ let loaded_seven = 1
 
 
 command! Sstatus call seven#status()
+command! -nargs=* Sadd call seven#stage(<f-args>)
 command! -nargs=* Scommit call seven#commit(<f-args>)
 command! -nargs=* Sdiff call seven#diff(<f-args>)

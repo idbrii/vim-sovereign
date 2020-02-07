@@ -1,29 +1,53 @@
 #! /usr/bin/env python3
 
+import collections
 import os.path as p
 
 import vim
 import seven.repo as repo
 
 repos = {}
+tempfile_to_repo = {}
+
+CommitBundle = collections.namedtuple('CommitBundle', ['commit_msg_file', 'repo'])
+
+def _get_repo(filepath, buffer):
+    try:
+        return repos[buffer]
+    except KeyError:
+        r = repo.get_repo(filepath)
+        repos[buffer] = r
+        return r
+
+def _func_args(args):
+    if args:
+        return ', '+ args
+    else:
+        return ''
 
 def _map(mode, key, funcname, args=None):
-    if args:
-        args = ', '+ args
-    else:
-        args = ''
+    args = _func_args(args)
     vim.command('{}noremap <buffer> {} :<C-u>call pyxeval("sevenapi.{}(". line(".") .", \'". getline(".") ."\'" {} .")")<CR>'.format(mode, key, funcname, args))
 
+def _autocmd(group, event, pattern, funcname, args=None):
+    args = _func_args(args)
+    vim.command(r'augroup '+ group)
+    if pattern == '<buffer>':
+        vim.command(r'    au! * <buffer>')
+    else:
+        vim.command(r'    au!')
+    vim.command(r'    autocmd {event} {pattern} call pyxeval("sevenapi.{funcname}(". expand("<amatch>") {args} .")")'.format(**locals()))
+    vim.command(r'augroup END')
 
 # Sstatus {{{1
 
 def setup_buffer_status(filepath):
-    r = repo.get_repo(filepath)
+    r = _get_repo(filepath, vim.current.buffer)
     b = vim.current.buffer
     b[:] = r._status_text().split('\n')
     b.options['modifiable'] = False
+    b.options['bufhidden'] = 'delete'
     b.vars['fugitive_type'] = 'index'
-    repos[vim.current.buffer] = r
 
     # Copying the interface from fugitive so it's familiar to fugitive users
     # (like me).
@@ -110,26 +134,51 @@ def diff_item(linenum, line):
 
 def stage_unstage(linenum, line):
     r = repos[vim.current.buffer]
-    # TODO: If already staged, then unstage.
-    r.request_stage(_get_file_from_line(line))
+    r.request_stage_toggle(_get_file_from_line(line))
+
+
+# Sadd {{{1
+
+def stage_file(filepath):
+    r = _get_repo(filepath, vim.current.buffer)
+    r.request_stage(filepath)
 
 
 # Scommit {{{1
 
-def setup_buffer_commit(filepath):
-    r = repo.get_repo(filepath)
+def setup_buffer_commit(filepath, commit_msg_file):
+    r = _get_repo(filepath, vim.current.buffer)
+    tempfile_to_repo[commit_msg_file] = CommitBundle(commit_msg_file=commit_msg_file, repo=r)
     b = vim.current.buffer
     b[:] = r._commit_text().split('\n')
-    # TODO: mappings
+    b.options['bufhidden'] = 'delete'
+    # Is there something better than BufHidden? Can't tell how fugitive does it.
+    _autocmd('seven', 'BufHidden', '<buffer>', 'on_close_commit_buffer')
+    # TODO: mappings?
     return None
+
+def on_close_commit_buffer(commit_msg_file):
+    """Actually trigger the commit.
+
+    on_close_commit_buffer(str) -> None
+    """
+    commit_bundle = tempfile_to_repo[commit_msg_file]
+    r = commit_bundle.repo
+    with open(commit_msg_file, 'r') as f:
+        success = r.commit(f.readlines())
+        if not success:
+            print('Aborting commit due to empty commit message')
+        
+
 
 # Sdiff
 
 def setup_buffer_cat(filepath, revision):
-    r = repo.get_repo(filepath)
+    r = _get_repo(filepath, vim.current.buffer)
     b = vim.current.buffer
     b[:] = r.cat_file(filepath, revision).split('\n')
     b.options['modifiable'] = False
+    b.options['bufhidden'] = 'delete'
     b.name = r.get_buffer_name_for_file(filepath, revision)
     return None
 

@@ -6,6 +6,8 @@ import re
 
 import svn.local
 
+_SNIP_MARKER = "------------------------ >8 ------------------------"
+
 def trim_leading_lines(txt, num_newlines):
     assert num_newlines > 0
     index = 0
@@ -20,11 +22,6 @@ class SvnError(Exception):
     """Docstring for SvnError. """
 
     def __init__(self, msg):
-        """
-
-        :msg: TODO
-
-        """
         Exception.__init__(self, msg)
         
 
@@ -62,6 +59,7 @@ class Repo(object):
         """
         self._root_dir = p.abspath(p.expanduser(root_dir))
         self._client = svn.local.LocalClient(self._root_dir)
+        self._staged_files = []
 
     def _to_svnroot_relative_path(self, filepath):
         f = p.expanduser(filepath)
@@ -116,13 +114,38 @@ class Repo(object):
 {}{}{}
 """.format(self.get_branch(), staged, unstaged, untracked)
 
+    def request_stage_toggle(self, filepath):
+        if filepath in self._staged_files:
+            self.request_unstage(filepath)
+        else:
+            self.request_stage(filepath)
+
     def request_stage(self, filepath):
         """Stage the input file.
     
         request_stage(str) -> None
         """
-        self._client.add(filepath)
-        # TODO: locally store it as staged and modify _status_text. Only actually stage it when we commit.
+        file_status = self._client.status(filepath)
+        for s in file_status:
+            if s.type == svn.constants.ST_UNVERSIONED:
+                self._client.add(filepath)
+                break
+        self._staged_files.append(filepath)
+
+    def request_unstage(self, filepath):
+        """Remove the input file from staging.
+
+        Throws ValueError if value wasn't staged.
+    
+        request_unstage(str) -> None
+        """
+        self._staged_files.remove(filepath)
+        file_status = self._client.status(filepath)
+        for s in file_status:
+            if s.type == svn.constants.ST_ADDED:
+                # self._client.revert doesn't exist
+                r = self._client.run_command('revert', [p.join(self._root_dir, filepath)])
+                print(r)
 
     def _get_stage_status(self):
         """Get the status repo's staged files.
@@ -132,14 +155,9 @@ class Repo(object):
         staged    = []
         unstaged  = []
         untracked = []
-        staged_types = [
-            svn.constants.ST_ADDED,
-            svn.constants.ST_DELETED,
-            svn.constants.ST_MODIFIED,
-            svn.constants.ST_REPLACED,
-        ]
+        root_len = len(self._root_dir) + 1
         for status in self._client.status():
-            if status.type in staged_types:
+            if status.name[root_len:] in self._staged_files:
                 staged.append(status)
             elif status.type == svn.constants.ST_UNVERSIONED:
                 untracked.append(status)
@@ -181,14 +199,14 @@ class Repo(object):
             '#\n# Untracked files:',
         ]
         staged, unstaged, untracked = self._get_stage_status_text(fmt, headers)
-        diff = self._unified_diff(self._root_dir, 'HEAD', '')
+        diff = "\n".join([self._unified_diff(staged_file, 'HEAD', '') for staged_file in self._staged_files])
         txt = '''
 # Please enter the commit message for your changes. Lines starting
 # with '#' will be ignored, and an empty message aborts the commit.
 #
 # On branch {branch}
 {staged}{unstaged}{untracked}#
-# ------------------------ >8 ------------------------
+# {snip}
 # Do not modify or remove the line above.
 # Everything below it will be ignored.
 {diff}'''.format(
@@ -197,6 +215,7 @@ class Repo(object):
     unstaged=unstaged,
     untracked=untracked,
     diff=diff,
+    snip=_SNIP_MARKER,
 )
         return txt
 
@@ -214,12 +233,27 @@ class Repo(object):
         d = d.decode('utf8')
         return d
 
-    def commit(self):
+    def commit(self, commit_msg_lines):
         """Commit current changes
+
+        Returns whether we committed the changes.
     
-        commit() -> None
+        commit(list(str)) -> True
         """
-        self._client.commit(message, rel_filepaths)
+        if not commit_msg_lines:
+            # Do nothing if commit message was empty.
+            return False
+
+        snip
+        for i,line in enumerate(commit_msg_lines):
+            if _SNIP_MARKER in line:
+                commit_msg_lines = commit_msg_lines[:i-1]
+                break
+
+        commit_msg_lines = [line for line in commit_msg_lines if line[0] != '#']
+        message = "\n".join(commit_msg_lines)
+        self._client.commit(message, self.staged_filepaths)
+        return True
 
     def update(self, single_file=None, revision=None):
         """Get latest revision from server
@@ -230,7 +264,7 @@ class Repo(object):
             single_file = [single_file]
         else:
             single_file = []
-        self._client.update(rel_filepaths, single_file, revision)
+        self._client.update(single_file, revision)
 
     def cat_file(self, filepath, revision):
         f = self._client.cat(self._to_svnroot_relative_path(filepath), revision)
@@ -285,6 +319,14 @@ def test():
     os.chdir(p.expanduser('~/data/code/svntest/checkout/'))
     r = get_repo('~/data/code/svntest/checkout/hello')
 
+    print('Before staging some files')
+    pp.pprint(r._staged_files)
+    print()
+    r.request_stage('smith')
+    r.request_stage('subdir/nestedhi')
+    print('After staging some files')
+    pp.pprint(r._staged_files)
+    print()
     print()
     print('Sstatus')
     print(r._status_text())
@@ -294,9 +336,16 @@ def test():
     print()
     print('Scommit')
     print(r._commit_text())
+    print('Sstatus')
+    print(r._status_text())
     print()
     print('Sdiff')
     print(r.cat_file('subdir/hastrailingnewline', 'HEAD'))
+    print()
+    print('After unstaging some files')
+    r.request_unstage('smith')
+    r.request_unstage('subdir/nestedhi')
+    pp.pprint(r._staged_files)
 
     print()
     print('done')

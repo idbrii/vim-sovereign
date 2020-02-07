@@ -29,6 +29,17 @@ function! seven#status() abort
     setfiletype fugitive
 endfunction
 
+function! seven#stage(...) abort
+    if len(a:000) == 0
+        let path = expand('%')
+    else
+        let path = a:000[0]
+    endif
+
+    let cmd = printf('sevenapi.stage_file("%s")', path)
+    call pyxeval(cmd)
+endfunction
+
 function! seven#commit(...) abort
     if len(a:000) == 0
         let path = expand('%')
@@ -41,7 +52,7 @@ function! seven#commit(...) abort
     wincmd _
     " We copy git formatting, so use their syntax.
     setfiletype gitcommit
-    let cmd = printf('sevenapi.setup_buffer_commit("%s")', path)
+    let cmd = printf('sevenapi.setup_buffer_commit("%s", "%s")', path, f)
     call pyxeval(cmd)
 endfunction
 
@@ -66,4 +77,3 @@ function! seven#diff(...) abort
     " TODO: depends on diffusable
     DiffBoth
 endfunction
-
