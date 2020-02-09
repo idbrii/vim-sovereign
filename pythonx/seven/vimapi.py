@@ -7,10 +7,6 @@ import vim
 import seven.repo as repo
 
 repos = {}
-tempfile_to_repo = {}
-
-CommitBundle = collections.namedtuple('CommitBundle', ['commit_msg_file', 'repo'])
-
 def _get_repo(filepath, buffer):
     try:
         return repos[buffer]
@@ -18,6 +14,19 @@ def _get_repo(filepath, buffer):
         r = repo.get_repo(filepath)
         repos[buffer] = r
         return r
+
+tempfile_to_repo = {}
+def _get_repo_for_tempfile(temp_filepath):
+    # Use realpath to ensure this key will match the input one.
+    temp_filepath = p.realpath(temp_filepath)
+    return tempfile_to_repo[temp_filepath]
+
+def _set_repo_for_tempfile(temp_filepath, repo):
+    temp_filepath = p.realpath(temp_filepath)
+    tempfile_to_repo[temp_filepath] = repo
+
+
+
 
 def _func_args(args):
     if args:
@@ -36,7 +45,7 @@ def _autocmd(group, event, pattern, funcname, args=None):
         vim.command(r'    au! * <buffer>')
     else:
         vim.command(r'    au!')
-    vim.command(r'    autocmd {event} {pattern} call pyxeval("sevenapi.{funcname}(". expand("<amatch>") {args} .")")'.format(**locals()))
+    vim.command(r'    autocmd {event} {pattern} call pyxeval("sevenapi.{funcname}(\'". expand("<amatch>:p") {args} ."\')")'.format(**locals()))
     vim.command(r'augroup END')
 
 # Sstatus {{{1
@@ -146,29 +155,30 @@ def stage_file(filepath):
 
 # Scommit {{{1
 
-def setup_buffer_commit(filepath, commit_msg_file):
+def setup_buffer_commit(filepath, commit_msg_filepath):
     r = _get_repo(filepath, vim.current.buffer)
-    tempfile_to_repo[commit_msg_file] = CommitBundle(commit_msg_file=commit_msg_file, repo=r)
+    _set_repo_for_tempfile(commit_msg_filepath, r)
     b = vim.current.buffer
     b[:] = r._commit_text().split('\n')
+    # When buffer is closed, it's deleted because we set bufhidden=delete,
+    # BufDelete is fired and BufHidden is not.
     b.options['bufhidden'] = 'delete'
-    # Is there something better than BufHidden? Can't tell how fugitive does it.
-    _autocmd('seven', 'BufHidden', '<buffer>', 'on_close_commit_buffer')
-    # TODO: mappings?
+    _autocmd('seven', 'BufDelete', '<buffer>', 'on_close_commit_buffer')
     return None
 
-def on_close_commit_buffer(commit_msg_file):
+def on_close_commit_buffer(commit_msg_filepath):
     """Actually trigger the commit.
 
     on_close_commit_buffer(str) -> None
     """
-    commit_bundle = tempfile_to_repo[commit_msg_file]
-    r = commit_bundle.repo
-    with open(commit_msg_file, 'r') as f:
-        success = r.commit(f.readlines())
-        if not success:
-            print('Aborting commit due to empty commit message')
-        
+    r = _get_repo_for_tempfile(commit_msg_filepath)
+    with open(commit_msg_filepath, 'r') as f:
+        try:
+            r.commit(f)
+        except repo.SvnError as e:
+            print(e)
+        else:
+            print('Commit complete')
 
 
 # Sdiff

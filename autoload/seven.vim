@@ -42,9 +42,9 @@ endfunction
 
 function! seven#commit(...) abort
     if len(a:000) == 0
-        let path = expand('%')
+        let path = expand('%:p')
     else
-        let path = a:000[0]
+        let path = fnamemodify(a:000[0], ':p')
     endif
 
     let f = tempname() . '_commit'

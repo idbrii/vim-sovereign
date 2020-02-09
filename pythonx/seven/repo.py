@@ -245,27 +245,30 @@ class Repo(object):
         d = d.decode('utf8')
         return d
 
-    def commit(self, commit_msg_lines):
-        """Commit current changes
+    def commit(self, commit_msg_file):
+        """Commit current changes using message from input file-object
 
-        Returns whether we committed the changes.
-    
-        commit(list(str)) -> True
+        commit(File) -> None
         """
-        if not commit_msg_lines:
-            # Do nothing if commit message was empty.
-            return False
+        commit_msg_lines = commit_msg_file.readlines()
 
-        snip
+        error_empty_msg = 'Aborting commit due to empty commit message'
+
+        if not commit_msg_lines:
+            raise SvnError(error_empty_msg)
+
         for i,line in enumerate(commit_msg_lines):
             if _SNIP_MARKER in line:
                 commit_msg_lines = commit_msg_lines[:i-1]
                 break
 
         commit_msg_lines = [line for line in commit_msg_lines if line[0] != '#']
-        message = "\n".join(commit_msg_lines)
-        self._client.commit(message, self.staged_filepaths)
-        return True
+
+        if all([line.isspace() for line in commit_msg_lines]):
+            raise SvnError(error_empty_msg)
+
+        message = "".join(commit_msg_lines)
+        self._client.commit(message, self._staged_files)
 
     def update(self, single_file=None, revision=None):
         """Get latest revision from server
@@ -322,33 +325,51 @@ def create_status_buffer(working_copy_file):
     pass
 
 def test():
-    import os
-    os.chdir(p.expanduser('~/data/code/svntest/checkout/'))
-    r = get_repo('~/data/code/svntest/checkout/hello')
+    allow_commit = True
+
+    import os, datetime
+    repo_root = p.expanduser('~/data/code/svntest/checkout/')
+    os.chdir(repo_root)
+    r = get_repo(p.join(repo_root, 'hello'))
+
+    with open(p.join(repo_root, 'modified_by_test'), 'w', encoding='utf8') as f:
+        f.write("modifying this file\n") 
+        f.write(str(datetime.datetime.now())) 
+        f.write("\n") 
 
     print('Before staging some files')
     pp.pprint(r._staged_files)
     print()
-    r.request_stage('smith')
+    r.request_stage('modified_by_test')
     r.request_stage('subdir/nestedhi')
     print('After staging some files')
     pp.pprint(r._staged_files)
     print()
     print()
+
     print('Sstatus')
     print(r._status_text())
     print()
     print('seven#branch()')
     print(r.get_branch())
     print()
-    print('Scommit')
+
+    print('Scommit buffer')
     print(r._commit_text())
-    print('Sstatus')
-    print(r._status_text())
     print()
-    print('Sdiff')
-    print(r.cat_file('subdir/hastrailingnewline', 'HEAD'))
-    print()
+    if allow_commit:
+        print('Scommit complete')
+        import io
+        print(r.commit(io.StringIO("Commit from test\n\nlonger message goes here\n{}".format(r._commit_text()))))
+        print()
+
+    # print('Sstatus')
+    # print(r._status_text())
+    # print()
+    # print('Sdiff')
+    # print(r.cat_file('subdir/hastrailingnewline', 'HEAD'))
+    # print()
+
     print('After unstaging some files')
     r.request_unstage('smith')
     r.request_unstage('subdir/nestedhi')
