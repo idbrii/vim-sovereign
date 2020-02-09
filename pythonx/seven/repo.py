@@ -242,7 +242,8 @@ class Repo(object):
              ],
             do_combine=True)
         d = d.decode('utf8')
-        return d
+        # skip 'Index:' line and '===' line.
+        return trim_leading_lines(d, 2)
 
     def commit(self, commit_msg_file):
         """Commit current changes using message from input file-object
