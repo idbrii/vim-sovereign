@@ -173,12 +173,8 @@ def on_close_commit_buffer(commit_msg_filepath):
     """
     r = _get_repo_for_tempfile(commit_msg_filepath)
     with open(commit_msg_filepath, 'r') as f:
-        try:
-            r.commit(f)
-        except repo.SvnError as e:
-            print(e)
-        else:
-            print('Commit complete')
+        success, msg = r.commit(f)
+        print(msg)
 
 
 # Sdiff

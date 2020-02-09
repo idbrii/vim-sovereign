@@ -255,7 +255,7 @@ class Repo(object):
         error_empty_msg = 'Aborting commit due to empty commit message'
 
         if not commit_msg_lines:
-            raise SvnError(error_empty_msg)
+            return False, error_empty_msg
 
         for i,line in enumerate(commit_msg_lines):
             if _SNIP_MARKER in line:
@@ -265,10 +265,19 @@ class Repo(object):
         commit_msg_lines = [line for line in commit_msg_lines if line[0] != '#']
 
         if all([line.isspace() for line in commit_msg_lines]):
-            raise SvnError(error_empty_msg)
+            return False, error_empty_msg
 
         message = "".join(commit_msg_lines)
         self._client.commit(message, self._staged_files)
+
+        # Unfortunately, commit doesn't return anything so we need to lookup
+        # the revision ourselves.
+        log = self._client.log_default(rel_filepath=self._staged_files[0], limit=1)
+        # Clear staging now that they're submitted.
+        self._staged_files = self._staged_files[:]
+        for line in log:
+            # Return the first (should be only) result.
+            return True, 'Committed revision {}.'.format(line.revision)
 
     def update(self, single_file=None, revision=None):
         """Get latest revision from server
@@ -360,19 +369,26 @@ def test():
     if allow_commit:
         print('Scommit complete')
         import io
-        print(r.commit(io.StringIO("Commit from test\n\nlonger message goes here\n{}".format(r._commit_text()))))
+        pp.pprint(r.commit(io.StringIO("Commit from test\n\nlonger message goes here\n{}".format(r._commit_text()))))
         print()
 
-    # print('Sstatus')
-    # print(r._status_text())
-    # print()
-    # print('Sdiff')
-    # print(r.cat_file('subdir/hastrailingnewline', 'HEAD'))
-    # print()
+    print('Sstatus')
+    print(r._status_text())
+    print()
+    print('Sdiff')
+    print(r.cat_file('subdir/hastrailingnewline', 'HEAD'))
+    print()
+
+    print('Slog')
+    hist = r._client.log_default(rel_filepath='hello', limit=1)
+    for h in hist:
+        pp.pprint(h)
+    print()
 
     print('After unstaging some files')
-    r.request_unstage('smith')
-    r.request_unstage('subdir/nestedhi')
+    if not allow_commit:
+        r.request_unstage('smith')
+        r.request_unstage('subdir/nestedhi')
     pp.pprint(r._staged_files)
 
     print()
