@@ -232,9 +232,8 @@ class Repo(object):
         return txt
 
     def _unified_diff(self, full_url_or_path, old, new):
-        # self._client.diff('hello', 'HEAD', '')
         # self._client.diff() doesn't work since it tries to give us the diff
-        # in a list and I don't wnat ot put it back together again.
+        # in a list and I don't want to put it back together again.
         d = self._client.run_command(
             'diff',
             ['--git',
@@ -299,7 +298,6 @@ class Repo(object):
 
     def get_buffer_name_for_file(self, filepath, revision):
         filepath = self._to_svnroot_relative_path(p.expanduser(filepath))
-        print('get_buffer_name_for_file', filepath)
         i = self._client.info(filepath, revision)
         name = i['url']
         colon = name.find(':')
