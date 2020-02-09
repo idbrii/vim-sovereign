@@ -8,6 +8,18 @@ import svn.local
 
 _SNIP_MARKER = "------------------------ >8 ------------------------"
 
+_root_to_repo = {}
+
+def get_repo(working_copy_file):
+    root = _find_svnroot_for_file(p.expanduser(working_copy_file))
+    try:
+        return _root_to_repo[root]
+    except KeyError:
+        r = Repo(root)
+        _root_to_repo[root] = r
+        return r
+
+
 def trim_leading_lines(txt, num_newlines):
     assert num_newlines > 0
     index = 0
@@ -281,11 +293,6 @@ class Repo(object):
         colon = name.find(':')
         assert colon > 0, "Expected url always includes a protocol"
         return 'seven' + name[colon:]
-
-
-def get_repo(working_copy_file):
-    root = _find_svnroot_for_file(p.expanduser(working_copy_file))
-    return Repo(root)
 
 
 def _find_svnroot_for_file(working_copy_file):
