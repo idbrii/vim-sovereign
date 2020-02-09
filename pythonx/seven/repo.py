@@ -1,5 +1,6 @@
 #! /usr/bin/env python3
 
+from email.utils import format_datetime
 import os.path as p
 import pprint as pp
 import re
@@ -297,6 +298,49 @@ class Repo(object):
         # Remove incorrect trailing space
         return f[:-1]
 
+    def get_log_text(self, filepath, limit=10, revision_from=None, revision_to=None):
+        """Get log buffer text for log
+    
+        log(str, int) -> str
+        """
+        rel_filepath = self._to_svnroot_relative_path(filepath)
+        log = self._client.log_default(
+            rel_filepath = rel_filepath,
+            limit = limit,
+            revision_from = revision_from,
+            revision_to = revision_to,
+        )
+
+        full_url_or_path = p.join(self._root_dir, filepath)
+
+        qf = [{
+            'filecontents': '''
+r{revision}
+author {author} {date}
+
+{msg}
+
+{diff}
+'''.format(
+    revision = entry.revision,
+    author = entry.author,
+    date = format_datetime(entry.date),
+    msg = entry.msg,
+    diff = self._unified_diff(full_url_or_path, entry.revision-1, entry.revision),
+           ),
+            'col': 0,
+            'lnum': 0,
+            'module': entry.revision,
+            'nr': 0,
+            'pattern': '',
+            'text': entry.msg,
+            'type': '',
+            'valid': 1,
+            'vcol': 0,
+        } for entry in log]
+        return qf
+
+
     def get_buffer_name_for_file(self, filepath, revision):
         filepath = self._to_svnroot_relative_path(p.expanduser(filepath))
         i = self._client.info(filepath, revision)
@@ -333,7 +377,7 @@ def create_status_buffer(working_copy_file):
     pass
 
 def test():
-    allow_commit = True
+    allow_commit = True # False
 
     import os, datetime
     repo_root = p.expanduser('~/data/code/svntest/checkout/')
@@ -379,9 +423,9 @@ def test():
     print()
 
     print('Slog')
-    hist = r._client.log_default(rel_filepath='hello', limit=1)
-    for h in hist:
-        pp.pprint(h)
+    log = r.get_log_text('hello')
+    print(log)
+    print(log[0]['filecontents'])
     print()
 
     print('After unstaging some files')

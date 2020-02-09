@@ -177,7 +177,7 @@ def on_close_commit_buffer(commit_msg_filepath):
         print(msg)
 
 
-# Sdiff
+# Sdiff {{{1
 
 def setup_buffer_cat(filepath, revision):
     r = _get_repo(filepath, vim.current.buffer)
@@ -188,5 +188,22 @@ def setup_buffer_cat(filepath, revision):
     b.name = r.get_buffer_name_for_file(filepath, revision)
     return None
 
+
+# Slog {{{1
+
+def setup_buffer_log(filepath, limit):
+    """
+    setup_buffer_log(string, int, int) -> None
+    """
+    r = _get_repo(filepath, vim.current.buffer)
+    log = r.get_log_text(filepath, limit=limit)
+    for entry in log:
+        # TODO:
+        # * create buffer and fill with entry['filecontents']
+        # * populate entry['bufnr']
+
+    vim.vars['seven_qf_scratch'] = vim.Dictionary(entry)
+    vim.eval('setqflist(g:seven_qf_scratch)')
+    vim.command('unlet g:seven_qf_scratch')
 
 # }}}

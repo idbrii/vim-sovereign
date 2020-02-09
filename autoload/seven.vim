@@ -77,3 +77,10 @@ function! seven#diff(...) abort
     " TODO: depends on diffusable
     DiffBoth
 endfunction
+
+function! seven#log(limit) abort
+    let path = expand('%:p')
+
+    let cmd = printf('sevenapi.setup_buffer_log("%s", %i)', path, a:limit)
+    call pyxeval(cmd)
+endfunction
