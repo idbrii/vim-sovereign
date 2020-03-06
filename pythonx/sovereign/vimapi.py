@@ -4,7 +4,7 @@ import collections
 import os.path as p
 
 import vim
-import seven.repo as repo
+import sovereign.repo as repo
 
 repos = {}
 def _get_repo(filepath, buffer):
@@ -36,7 +36,7 @@ def _func_args(args):
 
 def _map(mode, key, funcname, args=None):
     args = _func_args(args)
-    vim.command('{}noremap <buffer> {} :<C-u>call pyxeval("sevenapi.{}(". line(".") .", \'". getline(".") ."\'" {} .")")<CR>'.format(mode, key, funcname, args))
+    vim.command('{}noremap <buffer> {} :<C-u>call pyxeval("sovereignapi.{}(". line(".") .", \'". getline(".") ."\'" {} .")")<CR>'.format(mode, key, funcname, args))
 
 def _autocmd(group, event, pattern, funcname, args=None):
     args = _func_args(args)
@@ -45,7 +45,7 @@ def _autocmd(group, event, pattern, funcname, args=None):
         vim.command(r'    au! * <buffer>')
     else:
         vim.command(r'    au!')
-    vim.command(r'    autocmd {event} {pattern} call pyxeval("sevenapi.{funcname}(\'". expand("<amatch>:p") {args} ."\')")'.format(**locals()))
+    vim.command(r'    autocmd {event} {pattern} call pyxeval("sovereignapi.{funcname}(\'". expand("<amatch>:p") {args} ."\')")'.format(**locals()))
     vim.command(r'augroup END')
 
 # Sstatus {{{1
@@ -163,7 +163,7 @@ def setup_buffer_commit(filepath, commit_msg_filepath):
     # When buffer is closed, it's deleted because we set bufhidden=delete,
     # BufDelete is fired and BufHidden is not.
     b.options['bufhidden'] = 'delete'
-    _autocmd('seven', 'BufDelete', '<buffer>', 'on_close_commit_buffer')
+    _autocmd('sovereign', 'BufDelete', '<buffer>', 'on_close_commit_buffer')
     return None
 
 def on_close_commit_buffer(commit_msg_filepath):
@@ -202,8 +202,8 @@ def setup_buffer_log(filepath, limit):
         # * create buffer and fill with entry['filecontents']
         # * populate entry['bufnr']
 
-    vim.vars['seven_qf_scratch'] = vim.Dictionary(entry)
-    vim.eval('setqflist(g:seven_qf_scratch)')
-    vim.command('unlet g:seven_qf_scratch')
+    vim.vars['sovereign_qf_scratch'] = vim.Dictionary(entry)
+    vim.eval('setqflist(g:sovereign_qf_scratch)')
+    vim.command('unlet g:sovereign_qf_scratch')
 
 # }}}

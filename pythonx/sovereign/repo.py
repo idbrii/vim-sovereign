@@ -107,14 +107,14 @@ class Repo(object):
         # ? plugin/
         # 
         # Unstaged (1)
-        # M pythonx/seven.py
+        # M pythonx/sovereign.py
         # 
         # Staged (1)
-        # A pythonx/seven.py
+        # A pythonx/sovereign.py
 
         def fmt(status):
             # Print in this style:
-            # M pythonx/seven.py
+            # M pythonx/sovereign.py
             return '{} {}'.format(self.status_map[status.type], self._to_svnroot_relative_path(status.name))
 
         headers = [
@@ -203,7 +203,7 @@ class Repo(object):
     def _commit_text(self):
         def fmt(status):
             # Print in this style:
-            #	new file:   pythonx/seven.py
+            #	new file:   pythonx/sovereign.py
             return '#\t{}:\t{}'.format(status.type_raw_name, self._to_svnroot_relative_path(status.name))
 
         headers = [
@@ -347,7 +347,7 @@ author {author} {date}
         name = i['url']
         colon = name.find(':')
         assert colon > 0, "Expected url always includes a protocol"
-        return 'seven' + name[colon:]
+        return 'sovereign' + name[colon:]
 
 
 def _find_svnroot_for_file(working_copy_file):
@@ -402,7 +402,7 @@ def test():
     print('Sstatus')
     print(r._status_text())
     print()
-    print('seven#branch()')
+    print('sovereign#branch()')
     print(r.get_branch())
     print()
 

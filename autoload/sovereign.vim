@@ -1,4 +1,4 @@
-pyx import seven.vimapi as sevenapi
+pyx import sovereign.vimapi as sovereignapi
 
 function! s:create_scratch(split_cmd, bufname)
     if exists(':ScratchNoSplit') == 2
@@ -20,27 +20,27 @@ function! s:create_scratch(split_cmd, bufname)
     endif
 endf
 
-function! seven#status() abort
+function! sovereign#status() abort
     let path = expand('%')
-    call s:create_scratch('split', 'seven-status')
+    call s:create_scratch('split', 'sovereign-status')
     "~ let b:fugitive_type = 'index'
-    let cmd = printf('sevenapi.setup_buffer_status("%s")', path)
+    let cmd = printf('sovereignapi.setup_buffer_status("%s")', path)
     call pyxeval(cmd)
     setfiletype fugitive
 endfunction
 
-function! seven#stage(...) abort
+function! sovereign#stage(...) abort
     if len(a:000) == 0
         let path = expand('%')
     else
         let path = a:000[0]
     endif
 
-    let cmd = printf('sevenapi.stage_file("%s")', path)
+    let cmd = printf('sovereignapi.stage_file("%s")', path)
     call pyxeval(cmd)
 endfunction
 
-function! seven#commit(...) abort
+function! sovereign#commit(...) abort
     if len(a:000) == 0
         let path = expand('%:p')
     else
@@ -52,11 +52,11 @@ function! seven#commit(...) abort
     wincmd _
     " We copy git formatting, so use their syntax.
     setfiletype gitcommit
-    let cmd = printf('sevenapi.setup_buffer_commit("%s", "%s")', path, f)
+    let cmd = printf('sovereignapi.setup_buffer_commit("%s", "%s")', path, f)
     call pyxeval(cmd)
 endfunction
 
-function! seven#diff(...) abort
+function! sovereign#diff(...) abort
     let revision = 'HEAD'
     if len(a:000) == 0
         let path = expand('%')
@@ -72,15 +72,15 @@ function! seven#diff(...) abort
     let old_ft = &l:filetype
     call s:create_scratch('vsplit', '')
     let &l:filetype = old_ft
-    let cmd = printf('sevenapi.setup_buffer_cat("%s", "%s")', path, revision)
+    let cmd = printf('sovereignapi.setup_buffer_cat("%s", "%s")', path, revision)
     call pyxeval(cmd)
     " TODO: depends on diffusable
     DiffBoth
 endfunction
 
-function! seven#log(limit) abort
+function! sovereign#log(limit) abort
     let path = expand('%:p')
 
-    let cmd = printf('sevenapi.setup_buffer_log("%s", %i)', path, a:limit)
+    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i)', path, a:limit)
     call pyxeval(cmd)
 endfunction
