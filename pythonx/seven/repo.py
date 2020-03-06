@@ -377,7 +377,7 @@ def create_status_buffer(working_copy_file):
     pass
 
 def test():
-    allow_commit = True # False
+    allow_commit = False # True
 
     import os, datetime
     repo_root = p.expanduser('~/data/code/svntest/checkout/')
@@ -426,6 +426,9 @@ def test():
     log = r.get_log_text('hello')
     print(log)
     print(log[0]['filecontents'])
+    # hist = r._client.log_default(rel_filepath='hello', limit=1)
+    # for h in hist:
+    #     pp.pprint(h)
     print()
 
     print('After unstaging some files')
