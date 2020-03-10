@@ -48,6 +48,18 @@ def _autocmd(group, event, pattern, funcname, args=None):
     vim.command(r'    autocmd {event} {pattern} call pyxeval("sovereignapi.{funcname}(\'". expand("<amatch>:p") {args} ."\')")'.format(**locals()))
     vim.command(r'augroup END')
 
+def _create_scratch_buffer(contents, filetype, should_stay_open):
+    vim.command('new')
+    vim.command('setlocal buftype=nofile bufhidden=hide noswapfile buflisted')
+    if filetype:
+        vim.command('setfiletype '+ filetype)
+    vim.current.buffer[:] = contents
+    bufnr = vim.eval('bufnr()')
+    if not should_stay_open:
+        vim.command('close')
+    return bufnr
+
+
 # Sstatus {{{1
 
 def setup_buffer_status(filepath):
@@ -196,14 +208,37 @@ def setup_buffer_log(filepath, limit):
     setup_buffer_log(string, int, int) -> None
     """
     r = _get_repo(filepath, vim.current.buffer)
-    log = r.get_log_text(filepath, limit=limit)
-    for entry in log:
-        # TODO:
-        # * create buffer and fill with entry['filecontents']
-        # * populate entry['bufnr']
+    qf_items = r.get_log_text(filepath, limit=limit)
+    items = []
 
-    vim.vars['sovereign_qf_scratch'] = vim.Dictionary(entry)
-    vim.eval('setqflist(g:sovereign_qf_scratch)')
+    old_lazyredraw = vim.options['lazyredraw']
+    for commit in qf_items:
+        # TODO:
+        # * Add svndiff format that's based on diff, but lets you navigate
+        #   revisions? fugitive has 'git' filetype.
+        # * Make navigating the quickfix use the same window like fugitive. Not
+        #   sure how? It uses bufhidden=delete instead of hide.
+        commit['bufnr'] = _create_scratch_buffer(commit['filecontents'].split('\n'), 'diff', should_stay_open=False)
+
+    vim.options['lazyredraw'] = old_lazyredraw
+
+    qf_what = { 'items': qf_items }
+
+    # log == [{
+    # 'filecontents': '\nr9\nauthor dbriscoe Sun, 09 Feb 2020 06:32:54 +0000\n\nfrom vim\n\n\ndiff --git a/hello b/hello\n--- a/hello\t(revision 8)\n+++ b/hello\t(revision 9)\n@@ -1,3 +1,4 @@\n hello\n hi there\n hi again\n+and more content\n\n',
+    # 'col': 0,
+    # 'lnum': 0,
+    # 'module': 9,
+    # 'nr': 0,
+    # 'pattern': '',
+    # 'text': 'from vim\n',
+    # 'type': '',
+    # 'valid': 1,
+    # 'vcol': 0
+    # },
+
+    vim.vars['sovereign_qf_scratch'] = vim.Dictionary(qf_what)
+    vim.eval('setqflist([], " ", g:sovereign_qf_scratch)')
     vim.command('unlet g:sovereign_qf_scratch')
 
 # }}}

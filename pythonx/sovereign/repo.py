@@ -314,32 +314,33 @@ class Repo(object):
 
         full_url_or_path = p.join(self._root_dir, filepath)
 
-        qf = [{
-            'filecontents': '''
-r{revision}
-author {author} {date}
+        qf_items = [{
+            'filecontents': '''r{revision}
+Author: {author}
+Date:   {date}
 
 {msg}
 
 {diff}
-'''.format(
-    revision = entry.revision,
-    author = entry.author,
-    date = format_datetime(entry.date),
-    msg = entry.msg,
-    diff = self._unified_diff(full_url_or_path, entry.revision-1, entry.revision),
-           ),
+            '''.format(
+                revision = entry.revision,
+                author = entry.author,
+                date = format_datetime(entry.date),
+                msg = entry.msg,
+                diff = self._unified_diff(full_url_or_path, entry.revision-1, entry.revision),
+            ),
             'col': 0,
             'lnum': 0,
-            'module': entry.revision,
+            'module': f'r{entry.revision}',
             'nr': 0,
             'pattern': '',
+            # TODO: Drop text after first \n
             'text': entry.msg,
             'type': '',
             'valid': 1,
             'vcol': 0,
         } for entry in log]
-        return qf
+        return qf_items
 
 
     def get_buffer_name_for_file(self, filepath, revision):
