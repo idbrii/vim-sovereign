@@ -242,7 +242,6 @@ class Repo(object):
              '--new', '{0}@{1}'.format(full_url_or_path, new),
              ],
             do_combine=True)
-        d = d.decode('utf8')
         # skip 'Index:' line and '===' line.
         return trim_leading_lines(d, 2)
 
@@ -293,7 +292,9 @@ class Repo(object):
 
     def cat_file(self, filepath, revision):
         f = self._client.cat(self._to_svnroot_relative_path(filepath), revision)
-        # Why doesn't svn produce utf output?
+        # svn.client.cat returns binary output, so it doesn't convert to
+        # unicode, but we assume all files we cat will be text files that can
+        # be unicode.
         f = f.decode('utf8')
         # Remove incorrect trailing space
         return f[:-1]
