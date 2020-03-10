@@ -433,7 +433,7 @@ def test():
 
     print('After unstaging some files')
     if not allow_commit:
-        r.request_unstage('smith')
+        r.request_unstage('modified_by_test')
         r.request_unstage('subdir/nestedhi')
     pp.pprint(r._staged_files)
 
