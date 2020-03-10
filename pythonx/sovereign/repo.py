@@ -20,13 +20,17 @@ def get_repo(working_copy_file):
         _root_to_repo[root] = r
         return r
 
-
 def trim_leading_lines(txt, num_newlines):
     assert num_newlines > 0
     index = 0
     for i in range(num_newlines):
         index = txt.find('\n', index + 1)
     return txt[index + 1:]
+
+def _take_first_x_lines(txt, num_newlines):
+    assert num_newlines > 0
+    lines = txt.split('\n')
+    return "\n".join(lines[:num_newlines])
 
 
 
@@ -334,8 +338,7 @@ Date:   {date}
             'module': f'r{entry.revision}',
             'nr': 0,
             'pattern': '',
-            # TODO: Drop text after first \n
-            'text': entry.msg,
+            'text': _take_first_x_lines(entry.msg, 1),
             'type': '',
             'valid': 1,
             'vcol': 0,
