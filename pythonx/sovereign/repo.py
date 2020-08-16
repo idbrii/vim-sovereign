@@ -5,7 +5,11 @@ import os.path as p
 import pprint as pp
 import re
 
-import svn.local
+try:
+    import svn.local
+except ImportError:
+    print('pysvn not installed. Please run pip install -r ~/.vim/bundle/sovereign/requirements.txt')
+    raise
 
 _SNIP_MARKER = "------------------------ >8 ------------------------"
 
