@@ -1,10 +1,35 @@
 #! /usr/bin/env python3
 
 import collections
+import functools
 import os.path as p
 
 import vim
 import sovereign.repo as repo
+
+
+def capture_exception(ex):
+    """Store exception for later handling.
+
+    capture_exception(Exception) -> None
+    """
+    ex_name = type(ex).__name__
+    ex_msg = str(ex)
+    vim.vars['sovereign_exception'] = "%s: %s" % (ex_name, ex_msg)
+
+
+def vim_error_on_fail(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as ex:
+            capture_exception(ex)
+            # Fire error so we can catch failure in vimscript.
+            vim.command(f'echoerr g:sovereign_exception')
+            return None
+    return wrapper
+
 
 repos = {}
 def _get_repo(filepath, buffer):
@@ -62,8 +87,13 @@ def _create_scratch_buffer(contents, filetype, should_stay_open):
 
 # Sstatus {{{1
 
+@vim_error_on_fail
 def setup_buffer_status(filepath):
     r = _get_repo(filepath, vim.current.buffer)
+    if not r:
+        vim.eval(f'echo "{filepath}" is not in svn')
+        return None
+    
     b = vim.current.buffer
     b[:] = r._status_text().split('\n')
     b.options['modifiable'] = False

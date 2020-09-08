@@ -1,5 +1,20 @@
 pyx import sovereign.vimapi as sovereignapi
 
+function! s:pyeval(cmd)
+    try
+        call pyxeval(a:cmd)
+        return v:true
+    catch
+        " In theory we want to catch this error:
+        " /^Vim\%((\a\+)\)\=:E858/	" Eval did not return a valid python object
+        " But using that regex catches nothing. Partly because the error
+        " doesn't register as a vim error (it's not prefixed with Vim). Maybe
+        " also because there's too much in the callstack.
+        echohl WarningMsg | echomsg g:sovereign_exception | echohl None
+        return v:false
+    endtry
+endf
+
 function! s:create_scratch(split_cmd, bufname)
     if exists(':ScratchNoSplit') == 2
         exec a:split_cmd
@@ -25,7 +40,10 @@ function! sovereign#status() abort
     call s:create_scratch('split', 'sovereign-status')
     "~ let b:fugitive_type = 'index'
     let cmd = printf('sovereignapi.setup_buffer_status("%s")', path)
-    call pyxeval(cmd)
+    if !s:pyeval(cmd)
+        bdelete
+        return
+    endif
     setfiletype fugitive
 endfunction
 
@@ -37,7 +55,9 @@ function! sovereign#stage(...) abort
     endif
 
     let cmd = printf('sovereignapi.stage_file("%s")', path)
-    call pyxeval(cmd)
+    if !s:pyeval(cmd)
+        return
+    endif
 endfunction
 
 function! sovereign#commit(...) abort
@@ -53,7 +73,9 @@ function! sovereign#commit(...) abort
     " We copy git formatting, so use their syntax.
     setfiletype gitcommit
     let cmd = printf('sovereignapi.setup_buffer_commit("%s", "%s")', path, f)
-    call pyxeval(cmd)
+    if !s:pyeval(cmd)
+        return
+    endif
 endfunction
 
 function! sovereign#diff(...) abort
@@ -73,7 +95,10 @@ function! sovereign#diff(...) abort
     call s:create_scratch('vsplit', '')
     let &l:filetype = old_ft
     let cmd = printf('sovereignapi.setup_buffer_cat("%s", "%s")', path, revision)
-    call pyxeval(cmd)
+    if !s:pyeval(cmd)
+        bdelete
+        return
+    endif
     " TODO: depends on diffusable
     DiffBoth
 endfunction
@@ -82,5 +107,7 @@ function! sovereign#log(limit) abort
     let path = expand('%:p')
 
     let cmd = printf('sovereignapi.setup_buffer_log("%s", %i)', path, a:limit)
-    call pyxeval(cmd)
+    if !s:pyeval(cmd)
+        return
+    endif
 endfunction
