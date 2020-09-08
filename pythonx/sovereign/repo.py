@@ -91,7 +91,7 @@ class Repo(object):
         i = self._client.info()
         url = i['url']
         if 'branches' in url:
-            url = re.sub('.*/branches/', '', url, 1, '')
+            url = re.sub('.*/branches/', '', url, 1)
             return p.dirname(url)
         elif '/trunk/' in url:
             return 'trunk'
