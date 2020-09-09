@@ -196,6 +196,7 @@ def status_stage_unstage(linenum, line):
 
 # Sadd {{{1
 
+@vim_error_on_fail
 def stage_file(filepath):
     r = _get_repo(filepath, vim.current.buffer)
     r.request_stage(filepath)
@@ -203,6 +204,7 @@ def stage_file(filepath):
 
 # Scommit {{{1
 
+@vim_error_on_fail
 def setup_buffer_commit(filepath, commit_msg_filepath):
     r = _get_repo(filepath, vim.current.buffer)
     _set_repo_for_tempfile(commit_msg_filepath, r)
@@ -227,6 +229,7 @@ def on_close_commit_buffer(commit_msg_filepath):
 
 # Sdiff {{{1
 
+@vim_error_on_fail
 def setup_buffer_cat(filepath, revision):
     r = _get_repo(filepath, vim.current.buffer)
     b = vim.current.buffer
@@ -239,6 +242,7 @@ def setup_buffer_cat(filepath, revision):
 
 # Slog {{{1
 
+@vim_error_on_fail
 def setup_buffer_log(filepath, limit):
     """
     setup_buffer_log(string, int, int) -> None
