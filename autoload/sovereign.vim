@@ -10,7 +10,11 @@ function! s:pyeval(cmd)
         " But using that regex catches nothing. Partly because the error
         " doesn't register as a vim error (it's not prefixed with Vim). Maybe
         " also because there's too much in the callstack.
-        echohl WarningMsg | echomsg g:sovereign_exception | echohl None
+
+        " Fallback to v:exception in case we failed to catch in python.
+        let error = get(g:, 'sovereign_exception', v:exception)
+        echohl WarningMsg | echomsg error | echohl None
+        silent! unlet g:sovereign_exception
         return v:false
     endtry
 endf
