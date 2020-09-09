@@ -116,7 +116,7 @@ def setup_buffer_status(filepath):
     _map('n', 'a',     'status_stage_unstage')
     # _map('n', 'u',           'unstage')
 
-    # _map('n', 'R',           'refresh')
+    _map('n', 'R',           'status_refresh')
 
     # _map('n', '.',           'edit_from_cmdline')
 
@@ -191,6 +191,11 @@ def diff_item(linenum, line):
 def status_stage_unstage(linenum, line):
     r = repos[vim.current.buffer]
     r.request_stage_toggle(_get_file_from_line(line))
+    _set_buffer_text_status(vim.current.buffer, r)
+
+
+def status_refresh(linenum, line):
+    r = repos[vim.current.buffer]
     _set_buffer_text_status(vim.current.buffer, r)
 
 
