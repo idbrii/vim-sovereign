@@ -384,12 +384,32 @@ def create_status_buffer(working_copy_file):
 def test():
     allow_commit = False # True
 
-    import os, datetime
+    import io, os, datetime
     repo_root = p.expanduser('~/data/code/svntest/checkout/')
     os.chdir(repo_root)
-    r = get_repo(p.join(repo_root, 'hello'))
 
-    with open(p.join(repo_root, 'modified_by_test'), 'w', encoding='utf8') as f:
+    hello = p.join(repo_root, 'hello')
+    r = get_repo(hello)
+
+    modified_by_test = p.join(repo_root, 'modified_by_test')
+    nestedhi = p.join(repo_root, 'subdir/nestedhi')
+    if not p.isfile(hello):
+        if allow_commit:
+            # Setup test case
+            os.makedirs(p.join(repo_root, 'subdir'), exist_ok=True)
+            files = [hello, modified_by_test, nestedhi]
+            for fpath in files:
+                with open(fpath, 'w', encoding='utf8') as f:
+                    f.write("hello\n") 
+                r.request_stage(r._to_svnroot_relative_path(fpath))
+            r.commit(io.StringIO("setup repo\n\nlonger message goes here\n"))
+            print('Created test svn repo.')
+        else:
+            print('Error: test svn repo not correctly setup. please enable allow_commit')
+        return
+    
+
+    with open(modified_by_test, 'w', encoding='utf8') as f:
         f.write("modifying this file\n") 
         f.write(str(datetime.datetime.now())) 
         f.write("\n") 
@@ -416,7 +436,6 @@ def test():
     print()
     if allow_commit:
         print('Scommit complete')
-        import io
         pp.pprint(r.commit(io.StringIO("Commit from test\n\nlonger message goes here\n{}".format(r._commit_text()))))
         print()
 
