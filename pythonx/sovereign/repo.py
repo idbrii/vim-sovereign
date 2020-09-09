@@ -79,12 +79,11 @@ class Repo(object):
         self._staged_files = []
 
     def _to_svnroot_relative_path(self, filepath):
-        f = p.expanduser(filepath)
-        # For some reason, relpath still makes me relative to cwd insted of to
-        # the input path. Use relpace instead (expanduser gives us absolute
-        # path).
+        f = p.abspath(p.expanduser(filepath))
+        # For some reason, relpath sometimes (when??) gives results relative to
+        # cwd insted of to the input path. Use replace instead.
         # XX f = p.relpath(f, self._root_dir)
-        f = f.replace(self._root_dir + '/', '')
+        f = f.replace(self._root_dir + p.sep, '')
         return f
 
     def get_branch(self):
@@ -103,6 +102,7 @@ class Repo(object):
 
         _status_text(svn.local.LocalClient, str) -> str
         """
+        # TODO: Support status for a directory since svn can be slow retrieving results from server.
 
         # Head: master
         # 
