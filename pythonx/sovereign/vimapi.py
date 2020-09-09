@@ -222,9 +222,12 @@ def on_close_commit_buffer(commit_msg_filepath):
     on_close_commit_buffer(str) -> None
     """
     r = _get_repo_for_tempfile(commit_msg_filepath)
-    with open(commit_msg_filepath, 'r') as f:
-        success, msg = r.commit(f)
-        print(msg)
+    try:
+        with open(commit_msg_filepath, 'r') as f:
+            success, msg = r.commit(f)
+            print(msg)
+    except FileNotFoundError:
+        print('Aborting commit due to empty commit message.')
 
 
 # Sdiff {{{1
