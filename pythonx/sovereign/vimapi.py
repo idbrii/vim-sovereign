@@ -95,10 +95,7 @@ def setup_buffer_status(filepath):
         return None
     
     b = vim.current.buffer
-    b[:] = r._status_text().split('\n')
-    b.options['modifiable'] = False
-    b.options['bufhidden'] = 'delete'
-    b.vars['fugitive_type'] = 'index'
+    _set_buffer_text_status(b, r)
 
     # Copying the interface from fugitive so it's familiar to fugitive users
     # (like me).
@@ -114,9 +111,9 @@ def setup_buffer_status(filepath):
     _map('n', 'dd',    'diff_item')
     # _map('n', 'dq',          'diff_close')
 
-    _map('n', 's',     'stage_unstage') # my remap. more useful than separate stage/unstage.
-    _map('n', '-',     'stage_unstage')
-    _map('n', 'a',     'stage_unstage')
+    _map('n', 's',     'status_stage_unstage') # my remap. more useful than separate stage/unstage.
+    _map('n', '-',     'status_stage_unstage')
+    _map('n', 'a',     'status_stage_unstage')
     # _map('n', 'u',           'unstage')
 
     # _map('n', 'R',           'refresh')
@@ -144,6 +141,14 @@ def setup_buffer_status(filepath):
     # _map('n', '[]',          'PreviousSectionEnd')
 
     return None
+
+
+def _set_buffer_text_status(buf, repo):
+    buf.options['modifiable'] = True
+    buf[:] = repo._status_text().split('\n')
+    buf.options['modifiable'] = False
+    buf.options['bufhidden'] = 'delete'
+    buf.vars['fugitive_type'] = 'index'
 
 def change_item_no_expand(linenum, direction):
     w = vim.current.window
@@ -183,9 +188,10 @@ def diff_item(linenum, line):
     # vim.command('resize') # full height
     vim.command('Sdiff')
 
-def stage_unstage(linenum, line):
+def status_stage_unstage(linenum, line):
     r = repos[vim.current.buffer]
     r.request_stage_toggle(_get_file_from_line(line))
+    _set_buffer_text_status(vim.current.buffer, r)
 
 
 # Sadd {{{1
