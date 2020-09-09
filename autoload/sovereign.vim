@@ -1,5 +1,19 @@
 pyx import sovereign.vimapi as sovereignapi
 
+if has('win32')
+    " python interprets "\U" in "C:\Users" as a unicode escape sequence and
+    " barfs on the function call (not even inside the function), so it can't
+    " get any backslashes in path names. Assume only win32 is dumb enough to
+    " pass paths like that and allow other platforms to use escapes.
+    function! s:to_unix_path_sep(path)
+        return substitute(a:path, '\\', '/', 'g')
+    endf
+else
+    function! s:to_unix_path_sep(path)
+        return a:path
+    endf
+endif
+
 function! s:pyeval(cmd)
     try
         call pyxeval(a:cmd)
@@ -43,7 +57,7 @@ function! sovereign#status() abort
     let path = expand('%')
     call s:create_scratch('split', 'sovereign-status')
     "~ let b:fugitive_type = 'index'
-    let cmd = printf('sovereignapi.setup_buffer_status("%s")', path)
+    let cmd = printf('sovereignapi.setup_buffer_status("%s")', s:to_unix_path_sep(path))
     if !s:pyeval(cmd)
         bdelete
         return
@@ -58,7 +72,7 @@ function! sovereign#stage(...) abort
         let path = a:000[0]
     endif
 
-    let cmd = printf('sovereignapi.stage_file("%s")', path)
+    let cmd = printf('sovereignapi.stage_file("%s")', s:to_unix_path_sep(path))
     if !s:pyeval(cmd)
         return
     endif
@@ -76,7 +90,7 @@ function! sovereign#commit(...) abort
     wincmd _
     " We copy git formatting, so use their syntax.
     setfiletype gitcommit
-    let cmd = printf('sovereignapi.setup_buffer_commit("%s", "%s")', path, f)
+    let cmd = printf('sovereignapi.setup_buffer_commit("%s", "%s")', s:to_unix_path_sep(path), s:to_unix_path_sep(f))
     if !s:pyeval(cmd)
         return
     endif
@@ -98,7 +112,7 @@ function! sovereign#diff(...) abort
     let old_ft = &l:filetype
     call s:create_scratch('vsplit', '')
     let &l:filetype = old_ft
-    let cmd = printf('sovereignapi.setup_buffer_cat("%s", "%s")', path, revision)
+    let cmd = printf('sovereignapi.setup_buffer_cat("%s", "%s")', s:to_unix_path_sep(path), revision)
     if !s:pyeval(cmd)
         bdelete
         return
@@ -110,7 +124,7 @@ endfunction
 function! sovereign#log(limit) abort
     let path = expand('%:p')
 
-    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i)', path, a:limit)
+    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i)', s:to_unix_path_sep(path), a:limit)
     if !s:pyeval(cmd)
         return
     endif
