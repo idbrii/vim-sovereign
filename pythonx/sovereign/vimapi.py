@@ -148,7 +148,7 @@ def _set_buffer_text_status(buf, repo):
     buf[:] = repo._status_text().split('\n')
     buf.options['modifiable'] = False
     buf.options['bufhidden'] = 'delete'
-    buf.vars['fugitive_type'] = 'index'
+    buf.vars['sovereign_type'] = 'index'
 
 def change_item_no_expand(linenum, direction):
     w = vim.current.window

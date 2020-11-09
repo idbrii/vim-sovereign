@@ -56,13 +56,12 @@ endf
 function! sovereign#status() abort
     let path = expand('%')
     call s:create_scratch('split', 'sovereign-status')
-    "~ let b:fugitive_type = 'index'
     let cmd = printf('sovereignapi.setup_buffer_status("%s")', s:to_unix_path_sep(path))
     if !s:pyeval(cmd)
         bdelete
         return
     endif
-    setfiletype fugitive
+    setfiletype sovereign
 endfunction
 
 function! sovereign#stage(...) abort
