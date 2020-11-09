@@ -397,11 +397,14 @@ def test():
 
     modified_by_test = p.join(repo_root, 'modified_by_test')
     nestedhi = p.join(repo_root, 'subdir/nestedhi')
+    trailnewline = p.join(repo_root, 'subdir/hastrailingnewline')
     if not p.isfile(hello):
         if allow_commit:
             # Setup test case
-            os.makedirs(p.join(repo_root, 'subdir'), exist_ok=True)
-            files = [hello, modified_by_test, nestedhi]
+            subdir = p.join(repo_root, 'subdir')
+            os.makedirs(subdir, exist_ok=True)
+            r.request_stage(r._to_svnroot_relative_path(subdir))
+            files = [hello, modified_by_test, nestedhi, trailnewline]
             for fpath in files:
                 with open(fpath, 'w', encoding='utf8') as f:
                     f.write("hello\n") 
@@ -447,7 +450,7 @@ def test():
     print(r._status_text())
     print()
     print('Sdiff')
-    print(r.cat_file('subdir/hastrailingnewline', 'HEAD'))
+    print(r.cat_file(trailnewline, 'HEAD'))
     print()
 
     print('Slog')
