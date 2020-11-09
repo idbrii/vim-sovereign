@@ -102,7 +102,7 @@ def setup_buffer_status(filepath):
     _map('n', '<C-N>', 'change_item_no_expand', '1')
     _map('n', '<C-P>', 'change_item_no_expand', '-1')
 
-    _map('n', '<CR>',  'edit', 'edit')
+    _map('n', '<CR>',  'edit')
     # _map('n', 'o',           'edit_in_split')
     # _map('n', 'O',           'edit_in_tab')
     # _map('n', 'gO',          'edit_in_vsplit')
@@ -160,7 +160,15 @@ def _get_file_from_line(line):
     file_start = line.find(' ')
     return line[file_start+1:]
 
-def edit(linenum, line, how):
+# Easier to use new functions than to try to pass strings.
+def edit(linenum, line):
+    return _edit(linenum, line, 'edit')
+def edit_in_split(linenum, line):
+    return _edit(linenum, line, 'split')
+def edit_in_vsplit(linenum, line):
+    return _edit(linenum, line, 'vsplit')
+
+def _edit(linenum, line, how):
     """Edit the file in the previous window.
 
     edit(int, str, str) -> None
@@ -184,7 +192,7 @@ def diff_item(linenum, line):
     # an existing window? Maybe the previous one?
     # Fugitive seems to go back to the previous window, load the file, split,
     # diff.
-    edit(linenum, line, 'silent botright edit')
+    _edit(linenum, line, 'silent botright edit')
     # vim.command('resize') # full height
     vim.command('Sdiff')
 
