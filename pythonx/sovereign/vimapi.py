@@ -2,6 +2,7 @@
 
 import collections
 import functools
+import os
 import os.path as p
 
 import vim
@@ -251,7 +252,7 @@ def on_close_commit_buffer(commit_msg_filepath):
 def setup_buffer_cat(filepath, revision):
     r = _get_repo(filepath, vim.current.buffer)
     b = vim.current.buffer
-    b[:] = r.cat_file(filepath, revision).split('\n')
+    b[:] = r.cat_file(filepath, revision).split(os.linesep)
     b.options['modifiable'] = False
     b.options['bufhidden'] = 'delete'
     b.name = r.get_buffer_name_for_file(filepath, revision)
