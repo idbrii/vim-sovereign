@@ -56,11 +56,12 @@ def _set_repo_for_tempfile(temp_filepath, repo):
 
 def _func_args(args):
     if args:
-        return ', '+ args
+        args = [f'\"{a}\"' for a in args]
+        return f""". ', {', '.join(args)}' """
     else:
         return ''
 
-def _map(mode, key, funcname, args=None):
+def _map(mode, key, funcname, *args):
     args = _func_args(args)
     vim.command('{}noremap <buffer> {} :<C-u>call pyxeval("sovereignapi.{}(". line(".") .", \'". getline(".") ."\'" {} .")")<CR>'.format(mode, key, funcname, args))
 
@@ -103,10 +104,10 @@ def setup_buffer_status(filepath):
     _map('n', '<C-N>', 'change_item_no_expand', '1')
     _map('n', '<C-P>', 'change_item_no_expand', '-1')
 
-    _map('n', '<CR>',  'edit')
-    _map('n', 'o',           'edit_in_split')
-    _map('n', 'O',           'edit_in_tab')
-    _map('n', 'gO',          'edit_in_vsplit')
+    _map('n', '<CR>',  'edit', 'edit')
+    _map('n', 'o',     'edit', 'split')
+    _map('n', 'O',     'edit', 'tabedit')
+    _map('n', 'gO',    'edit', 'vsplit')
 
     _map('n', 'c',     'commit', 'verbose=True')
     _map('n', 'dd',    'diff_item')
@@ -161,17 +162,7 @@ def _get_file_from_line(line):
     file_start = line.find(' ')
     return line[file_start+1:]
 
-# Easier to use new functions than to try to pass strings.
-def edit(linenum, line):
-    return _edit(linenum, line, 'edit')
-def edit_in_split(linenum, line):
-    return _edit(linenum, line, 'split')
-def edit_in_vsplit(linenum, line):
-    return _edit(linenum, line, 'vsplit')
-def edit_in_tab(linenum, line):
-    return _edit(linenum, line, 'tabedit')
-
-def _edit(linenum, line, how):
+def edit(linenum, line, how):
     """Edit the file in the previous window.
 
     edit(int, str, str) -> None
@@ -195,7 +186,7 @@ def diff_item(linenum, line):
     # an existing window? Maybe the previous one?
     # Fugitive seems to go back to the previous window, load the file, split,
     # diff.
-    _edit(linenum, line, 'silent botright edit')
+    edit(linenum, line, 'silent botright edit')
     # vim.command('resize') # full height
     vim.command('Sdiff')
 
