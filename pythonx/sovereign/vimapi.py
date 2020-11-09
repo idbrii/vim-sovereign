@@ -103,9 +103,9 @@ def setup_buffer_status(filepath):
     _map('n', '<C-P>', 'change_item_no_expand', '-1')
 
     _map('n', '<CR>',  'edit')
-    # _map('n', 'o',           'edit_in_split')
-    # _map('n', 'O',           'edit_in_tab')
-    # _map('n', 'gO',          'edit_in_vsplit')
+    _map('n', 'o',           'edit_in_split')
+    _map('n', 'O',           'edit_in_tab')
+    _map('n', 'gO',          'edit_in_vsplit')
 
     _map('n', 'c',     'commit', 'verbose=True')
     _map('n', 'dd',    'diff_item')
@@ -167,6 +167,8 @@ def edit_in_split(linenum, line):
     return _edit(linenum, line, 'split')
 def edit_in_vsplit(linenum, line):
     return _edit(linenum, line, 'vsplit')
+def edit_in_tab(linenum, line):
+    return _edit(linenum, line, 'tabedit')
 
 def _edit(linenum, line, how):
     """Edit the file in the previous window.
