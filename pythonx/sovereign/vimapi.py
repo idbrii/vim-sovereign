@@ -32,6 +32,9 @@ def vim_error_on_fail(func):
     return wrapper
 
 
+def clamp(minimum, x, maximum):
+    return max(minimum, min(x, maximum))
+
 repos = {}
 def _get_repo(filepath, buffer):
     try:
@@ -166,10 +169,20 @@ def _set_buffer_text_status(buf, repo):
     buf.vars['sovereign_type'] = 'index'
 
 def change_item_no_expand(linenum, line, direction):
-    # TODO: skip over blanks and expanded diffs
+    num_buf_lines = len(vim.current.buffer)
+    i = linenum + direction
+    while 0 <= i < num_buf_lines:
+        line = vim.current.buffer[i]
+        if line and line[0].isupper():
+            break
+        i += direction
+
+    # convert to 1-indexed and clamp
+    i = clamp(1, i + 1, num_buf_lines)
+
     w = vim.current.window
     c = w.cursor
-    w.cursor = (c[0] + direction, c[1])
+    w.cursor = (i, c[1])
 
 
 def _get_file_from_line(line):
