@@ -54,16 +54,22 @@ def _set_repo_for_tempfile(temp_filepath, repo):
 
 
 
+def _extra_quote_strings(t):
+    if type(t) == str:
+        return f"""'{t}'"""
+    else:
+        return str(t)
+    
 def _func_args(args):
     if args:
-        args = [f'\"{a}\"' for a in args]
-        return f""". ', {', '.join(args)}' """
+        args = [_extra_quote_strings(a) for a in args]
+        return f""", {', '.join(args)}"""
     else:
         return ''
 
 def _map(mode, key, funcname, *args):
     args = _func_args(args)
-    vim.command('{}noremap <buffer> {} :<C-u>call pyxeval("sovereignapi.{}(". line(".") .", \'". getline(".") ."\'" {} .")")<CR>'.format(mode, key, funcname, args))
+    vim.command('''{}noremap <buffer> {} :<C-u>call pyxeval(printf("sovereignapi.{}(%i, '%s'{})", line("."), getline(".")))<CR>'''.format(mode, key, funcname, args))
 
 def _autocmd(group, event, pattern, funcname, args=None):
     args = _func_args(args)
@@ -101,8 +107,8 @@ def setup_buffer_status(filepath):
 
     # Copying the interface from fugitive so it's familiar to fugitive users
     # (like me).
-    _map('n', '<C-N>', 'change_item_no_expand', '1')
-    _map('n', '<C-P>', 'change_item_no_expand', '-1')
+    _map('n', '<C-N>', 'change_item_no_expand', 1)
+    _map('n', '<C-P>', 'change_item_no_expand', -1)
 
     _map('n', '<CR>',  'edit', 'edit')
     _map('n', 'o',     'edit', 'split')
@@ -152,7 +158,8 @@ def _set_buffer_text_status(buf, repo):
     buf.options['bufhidden'] = 'delete'
     buf.vars['sovereign_type'] = 'index'
 
-def change_item_no_expand(linenum, direction):
+def change_item_no_expand(linenum, line, direction):
+    # TODO: skip over blanks and expanded diffs
     w = vim.current.window
     c = w.cursor
     w.cursor = (c[0] + direction, c[1])
