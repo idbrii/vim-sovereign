@@ -73,7 +73,10 @@ def _func_args(args, kwargs):
 
 def _map(mode, key, funcname, *args, **kwargs):
     args = _func_args(args, kwargs)
-    vim.command('''{}noremap <buffer> {} :<C-u>call pyxeval(printf("sovereignapi.{}(%i, '%s'{})", line("."), getline(".")))<CR>'''.format(mode, key, funcname, args))
+    # passes (linenum, line, ...) to funcname. linenum is the 0-index line
+    # number in the buffer so vim.current.buffer[linenum] == line. (Vim uses
+    # 1-indexing.)
+    vim.command('''{}noremap <buffer> {} :<C-u>call pyxeval(printf("sovereignapi.{}(%i, '%s'{})", line(".")-1, getline(".")))<CR>'''.format(mode, key, funcname, args))
 
 def _autocmd(group, event, pattern, funcname, args=None):
     args = _func_args(args, None)
@@ -203,7 +206,24 @@ def diff_item(linenum, line):
 
 def status_stage_unstage(linenum, line):
     r = repos[vim.current.buffer]
-    r.request_stage_toggle(_get_file_from_line(line))
+    is_valid = line and not line.isspace()
+    if not is_valid:
+        return
+    
+    is_header = line[1] != ' '
+    if is_header:
+        # Get everything in block
+        try:
+            i = linenum + 1
+            while not line.isspace():
+                line = vim.current.buffer[i]
+                print('|' + line)
+                r.request_stage_toggle(_get_file_from_line(line))
+                i += 1
+        except IndexError:
+            pass
+    else:
+        r.request_stage_toggle(_get_file_from_line(line))
     _set_buffer_text_status(vim.current.buffer, r)
 
 
