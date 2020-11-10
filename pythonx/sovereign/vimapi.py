@@ -60,19 +60,23 @@ def _extra_quote_strings(t):
     else:
         return str(t)
     
-def _func_args(args):
+def _func_args(args, kwargs):
+    out = ''
     if args:
         args = [_extra_quote_strings(a) for a in args]
-        return f""", {', '.join(args)}"""
-    else:
-        return ''
+        out = f""", {', '.join(args)}"""
 
-def _map(mode, key, funcname, *args):
-    args = _func_args(args)
+    if kwargs:
+        out += ', ' + ', '.join(f"""{k}={_extra_quote_strings(v)}""" for k,v in kwargs.items())
+
+    return out
+
+def _map(mode, key, funcname, *args, **kwargs):
+    args = _func_args(args, kwargs)
     vim.command('''{}noremap <buffer> {} :<C-u>call pyxeval(printf("sovereignapi.{}(%i, '%s'{})", line("."), getline(".")))<CR>'''.format(mode, key, funcname, args))
 
 def _autocmd(group, event, pattern, funcname, args=None):
-    args = _func_args(args)
+    args = _func_args(args, None)
     vim.command(r'augroup '+ group)
     if pattern == '<buffer>':
         vim.command(r'    au! * <buffer>')
@@ -115,7 +119,7 @@ def setup_buffer_status(filepath):
     _map('n', 'O',     'edit', 'tabedit')
     _map('n', 'gO',    'edit', 'vsplit')
 
-    _map('n', 'c',     'commit', 'verbose=True')
+    _map('n', 'c',     'commit', verbose=True)
     _map('n', 'dd',    'diff_item')
     # _map('n', 'dq',          'diff_close')
 
