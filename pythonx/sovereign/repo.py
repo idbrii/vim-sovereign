@@ -96,7 +96,7 @@ class Repo(object):
         if 'branches' in url:
             url = re.sub('.*/branches/', '', url, 1)
             return p.dirname(url)
-        elif '/trunk/' in url:
+        elif url.endswith('/trunk') or '/trunk/' in url:
             return 'trunk'
         else:
             return '?'
