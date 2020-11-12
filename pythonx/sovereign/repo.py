@@ -78,16 +78,17 @@ class Repo(object):
         :root_dir: The root directory for the svn repo.
 
         """
-        self._root_dir = p.abspath(p.expanduser(root_dir))
+        self._root_dir = p.realpath(p.abspath(p.expanduser(root_dir)))
         self._client = svn.local.LocalClient(self._root_dir)
         self._staged_files = []
 
     def _to_svnroot_relative_path(self, filepath):
-        f = p.abspath(p.expanduser(filepath))
-        # For some reason, relpath sometimes (when??) gives results relative to
+        f = p.realpath(p.abspath(p.expanduser(filepath)))
+        # For some reason, relpath sometimes gives results relative to
         # cwd insted of to the input path. Use replace instead.
-        # XX f = p.relpath(f, self._root_dir)
-        f = f.replace(self._root_dir + p.sep, '')
+        # (So far the only repro I've found is with symbolic links, but I think that's fixed.)
+        f = p.relpath(f, self._root_dir)
+        assert f == f.replace(self._root_dir + p.sep, ''), "relpath returned a different result than replace"
         return f
 
     def get_branch(self):
