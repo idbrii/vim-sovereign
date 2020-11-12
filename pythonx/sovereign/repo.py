@@ -388,6 +388,11 @@ def create_status_buffer(working_copy_file):
 def test():
     allow_commit = False # True
 
+    # Create the svn repo with:
+    #   repo=/Users/idbrii/data/code/svntest/repo
+    #   svnadmin create $repo
+    #   svn mkdir --parents -m"Creating basic directory structure" file://$repo/trunk file://$repo/branches file://$repo/tags
+    #   svn checkout file://$repo/trunk checkout
     import io, os, datetime
     repo_root = p.expanduser('~/data/code/svntest/checkout/')
     os.chdir(repo_root)
