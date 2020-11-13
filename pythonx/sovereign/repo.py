@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 from email.utils import format_datetime
+import os
 import os.path as p
 import pprint as pp
 import re
@@ -299,14 +300,33 @@ class Repo(object):
             single_file = []
         self._client.update(single_file, revision)
 
-    def cat_file(self, filepath, revision):
+    def _cat_file_unprocessed(self, filepath, revision):
         f = self._client.cat(self._to_svnroot_relative_path(filepath), revision)
         # svn.client.cat returns binary output, so it doesn't convert to
         # unicode, but we assume all files we cat will be text files that can
         # be unicode.
         f = f.decode('utf8')
+        # Will have an incorrect trailing space!
+        return f
+
+    def cat_file(self, filepath, revision):
+        f = self._cat_file_unprocessed(filepath, revision)
         # Remove incorrect trailing space
         return f[:-1]
+
+    def cat_file_as_list(self, filepath, revision):
+        # Assume repo holds files in windows-style \r\n because vim won't
+        # represent \r as a line ending even with ff=dos.
+        # (We could strip \r line endings, but splitting on line endings once
+        # seems more correct.)
+        f = self._cat_file_unprocessed(filepath, revision)
+        p = f.split('\r\n')
+        if len(p) < 2:
+            # No match means it's not crlf. Assume local os line endings.
+            p = f.split(os.linesep)
+        # Now that line endings are cleaned up, we can remove incorrect
+        # trailing space. Doing earlier would leave on \r in the file.
+        return p[:-1]
 
     def get_log_text(self, filepath, limit=10, revision_from=None, revision_to=None):
         """Get log buffer text for log
