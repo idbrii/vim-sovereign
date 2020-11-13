@@ -63,7 +63,7 @@ class Repo(object):
         "!", # ST_IGNORED     = 5
         "incomplete", # ST_INCOMPLETE  = 6
         "merged", # ST_MERGED      = 7
-        "?", # ST_MISSING     = 8
+        "d", # ST_MISSING     = 8
         "M", # ST_MODIFIED    = 9
         "none", # ST_NONE        = 10
         "normal", # ST_NORMAL      = 11
