@@ -57,8 +57,8 @@ class Repo(object):
     status_map = [
         "",
         "A", # ST_ADDED       = 1
-        "c", # ST_CONFLICTED  = 2
-        "?", # ST_DELETED     = 3
+        "C", # ST_CONFLICTED  = 2
+        "D", # ST_DELETED     = 3
         "x", # ST_EXTERNAL    = 4
         "!", # ST_IGNORED     = 5
         "incomplete", # ST_INCOMPLETE  = 6
