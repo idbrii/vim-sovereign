@@ -103,6 +103,17 @@ def _create_scratch_buffer(contents, filetype, should_stay_open):
     return bufnr
 
 
+# statusline {{{1
+
+@vim_error_on_fail
+def get_branch(filepath):
+    r = _get_repo(filepath, vim.current.buffer)
+    branch = '--'
+    if r:
+        branch = r.get_branch()
+    vim.vars['sovereign_returnvalue'] = branch
+
+
 # Sstatus {{{1
 
 @vim_error_on_fail

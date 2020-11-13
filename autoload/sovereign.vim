@@ -53,6 +53,24 @@ function! s:create_scratch(split_cmd, bufname)
     endif
 endf
 
+function! sovereign#branch_name() abort
+    " Only update branch every 5 seconds
+    if !exists('s:sovereign_branch_lastupdate')
+        let s:sovereign_branch_lastupdate = localtime()
+    elseif localtime() - s:sovereign_branch_lastupdate < 5
+        return s:sovereign_branch_cached
+    endif
+    
+    let path = expand('%')
+    let cmd = printf('sovereignapi.get_branch("%s")', s:to_unix_path_sep(path))
+    if !s:pyeval(cmd)
+        return '--'
+    endif
+    let s:sovereign_branch_cached = g:sovereign_returnvalue
+    unlet g:sovereign_returnvalue
+    return s:sovereign_branch_cached
+endfunction
+
 function! sovereign#status() abort
     let path = expand('%')
     call s:create_scratch('split', 'sovereign-status')
