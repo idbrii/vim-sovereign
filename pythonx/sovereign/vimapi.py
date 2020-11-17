@@ -32,6 +32,14 @@ def vim_error_on_fail(func):
     return wrapper
 
 
+@vim_error_on_fail
+def dbg_repo():
+    '''Get the current buffer -- for interactive debugging from vim.
+    '''
+    b = vim.current.buffer
+    return _get_repo(b.name, b)
+
+
 def clamp(minimum, x, maximum):
     return max(minimum, min(x, maximum))
 
