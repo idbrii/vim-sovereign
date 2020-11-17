@@ -37,6 +37,11 @@ def _take_first_x_lines(txt, num_newlines):
     lines = txt.split('\n')
     return "\n".join(lines[:num_newlines])
 
+def _prefix_lines(txt, prefix):
+    lines = txt.split('\n')
+    lines = [prefix + line for line in lines]
+    return "\n".join(lines)
+
 
 
 class SvnError(Exception):
@@ -361,7 +366,7 @@ Date:   {date}
                 revision = entry.revision,
                 author = entry.author,
                 date = format_datetime(entry.date),
-                msg = entry.msg,
+                msg = _prefix_lines(entry.msg, ' '), # prefix to prevent syntax highlight
                 diff = self._unified_diff(full_url_or_path, entry.revision-1, entry.revision),
             ),
             'col': 0,
