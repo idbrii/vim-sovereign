@@ -360,6 +360,7 @@ def setup_buffer_log(filepath, limit):
     vim.vars['sovereign_qf_scratch'] = vim.Dictionary(qf_what)
     vim.eval('setqflist([], " ", g:sovereign_qf_scratch)')
     vim.command('unlet g:sovereign_qf_scratch')
+    vim.command('copen')
 
 # Sedit {{{1
 
