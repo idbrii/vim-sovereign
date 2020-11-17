@@ -145,7 +145,7 @@ def setup_buffer_status(filepath):
     _map('n', 'gO',    'edit', 'vsplit')
 
     _map('n', 'c',     'commit', verbose=True)
-    _map('n', 'dd',    'diff_item')
+    _map('n', 'dd',    'diff_item', manage_win=True)
     # _map('n', 'dq',          'diff_close')
 
     _map('n', 's',     'status_stage_unstage') # my remap. more useful than separate stage/unstage.
@@ -226,12 +226,18 @@ def commit(linenum, line, verbose=True):
         cmd += '-v'
     vim.command(cmd)
 
-def diff_item(linenum, line):
-    # TODO: Do I want to split? I think I want to switch to the buffer if it's
-    # in a visible window and open the diff, otherwise open a tab? Or replace
-    # an existing window? Maybe the previous one?
-    # Fugitive seems to go back to the previous window, load the file, split,
-    # diff.
+def diff_item(linenum, line, manage_win):
+    num_win = int(vim.eval('winnr("$")'))
+    if num_win > 2:
+        # If we had a previous diff, we need to close it. If we had some other
+        # windows, there's not enough space to diff.
+        # TODO: Better to re-use existing layout? Or open a tab?
+        # Fugitive seems to go back to the previous window, load the file,
+        # split, diff.
+        vim.command('only')
+        # Destination for diff
+        vim.command('split')
+    
     edit(linenum, line, 'silent botright edit')
     # vim.command('resize') # full height
     vim.command('Sdiff')
