@@ -343,6 +343,7 @@ def setup_buffer_log(filepath, limit):
     vim.options['lazyredraw'] = old_lazyredraw
 
     qf_what = { 'items': qf_items }
+    qf_what['title'] = ':Slog '+ filepath
 
     # log == [{
     # 'filecontents': '\nr9\nauthor dbriscoe Sun, 09 Feb 2020 06:32:54 +0000\n\nfrom vim\n\n\ndiff --git a/hello b/hello\n--- a/hello\t(revision 8)\n+++ b/hello\t(revision 9)\n@@ -1,3 +1,4 @@\n hello\n hi there\n hi again\n+and more content\n\n',
