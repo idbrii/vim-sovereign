@@ -323,12 +323,12 @@ def setup_buffer_cat(filepath, revision):
 # Slog {{{1
 
 @vim_error_on_fail
-def setup_buffer_log(filepath, limit):
+def setup_buffer_log(filepath, limit, showdiff):
     """
     setup_buffer_log(string, int, int) -> None
     """
     r = _get_repo(filepath, vim.current.buffer)
-    qf_items = r.get_log_text(filepath, limit=limit)
+    qf_items = r.get_log_text(filepath, limit=limit, include_diff=showdiff)
     items = []
 
     old_lazyredraw = vim.options['lazyredraw']
@@ -338,6 +338,7 @@ def setup_buffer_log(filepath, limit):
         #   revisions? fugitive has 'git' filetype.
         # * Make navigating the quickfix use the same window like fugitive. Not
         #   sure how? It uses bufhidden=delete instead of hide.
+        # * Load diff on buffer load instead of buffer creation (to speed up processing).
         commit['bufnr'] = _create_scratch_buffer(commit['filecontents'].split('\n'), 'diff', filepath, should_stay_open=False)
 
     vim.options['lazyredraw'] = old_lazyredraw

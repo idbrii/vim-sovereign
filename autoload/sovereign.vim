@@ -33,6 +33,13 @@ function! s:pyeval(cmd)
     endtry
 endf
 
+function! s:to_py_bool(vim_bool) abort
+    if a:vim_bool
+        return 'True'
+    endif
+    return 'False'
+endf
+
 function! s:create_scratch(split_cmd, bufname)
     if exists(':ScratchNoSplit') == 2
         exec a:split_cmd
@@ -138,13 +145,13 @@ function! sovereign#diff(...) abort
     DiffBoth
 endfunction
 
-function! sovereign#log(limit, filepath) abort
+function! sovereign#log(limit, filepath, showdiff) abort
     let path = expand(a:filepath)
     if empty(path)
         let path = expand('%:p')
     endif
 
-    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i)', s:to_unix_path_sep(path), a:limit)
+    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i, %s)', s:to_unix_path_sep(path), a:limit, s:to_py_bool(a:showdiff))
     if !s:pyeval(cmd)
         return
     endif

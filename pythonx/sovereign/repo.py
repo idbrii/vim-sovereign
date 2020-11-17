@@ -339,7 +339,7 @@ class Repo(object):
             p = p[:-1]
         return p
 
-    def get_log_text(self, filepath, limit=10, revision_from=None, revision_to=None):
+    def get_log_text(self, filepath, limit=10, include_diff=True, revision_from=None, revision_to=None):
         """Get log buffer text for log
     
         log(str, int) -> str
@@ -354,6 +354,14 @@ class Repo(object):
 
         full_url_or_path = p.join(self._root_dir, filepath)
 
+        if include_diff:
+            def get_diff(entry):
+                return self._unified_diff(full_url_or_path, entry.revision-1, entry.revision)
+        else:
+            def get_diff(entry):
+                return ''
+        
+
         qf_items = [{
             'filecontents': '''r{revision}
 Author: {author}
@@ -367,7 +375,7 @@ Date:   {date}
                 author = entry.author,
                 date = format_datetime(entry.date),
                 msg = _prefix_lines(entry.msg, ' '), # prefix to prevent syntax highlight
-                diff = self._unified_diff(full_url_or_path, entry.revision-1, entry.revision),
+                diff = get_diff(entry),
             ),
             'col': 0,
             'lnum': 0,
