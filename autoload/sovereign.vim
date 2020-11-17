@@ -123,14 +123,15 @@ endfunction
 function! sovereign#diff(...) abort
     let revision = 'HEAD'
     if len(a:000) == 0
-        let path = expand('%')
+        let path = '%'
     elseif len(a:000) == 1
         let path = a:000[0]
     else
         let path = a:000[0]
-        let revision = a:000[0]
+        let revision = a:000[1]
     endif
 
+    let path = expand(path)
     let path = fnamemodify(path, ':p')
 
     let old_ft = &l:filetype
