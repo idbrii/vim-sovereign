@@ -146,3 +146,9 @@ function! sovereign#log(limit) abort
         return
     endif
 endfunction
+
+function! sovereign#edit() abort
+    if !s:pyeval('sovereignapi.jump_to_originator()')
+        return
+    endif
+endfunction

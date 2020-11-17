@@ -99,12 +99,13 @@ def _autocmd(group, event, pattern, funcname, args=None):
     vim.command(r'    autocmd {event} {pattern} call pyxeval("sovereignapi.{funcname}(\'". expand("<amatch>:p") {args} ."\')")'.format(**locals()))
     vim.command(r'augroup END')
 
-def _create_scratch_buffer(contents, filetype, should_stay_open):
+def _create_scratch_buffer(contents, filetype, originating_filepath, should_stay_open):
     vim.command('new')
     vim.command('setlocal buftype=nofile bufhidden=hide noswapfile buflisted')
     if filetype:
         vim.command('setfiletype '+ filetype)
     vim.current.buffer[:] = contents
+    vim.current.buffer.vars['sovereign_originator'] = originating_filepath
     bufnr = vim.eval('bufnr()')
     if not should_stay_open:
         vim.command('close')
@@ -337,7 +338,7 @@ def setup_buffer_log(filepath, limit):
         #   revisions? fugitive has 'git' filetype.
         # * Make navigating the quickfix use the same window like fugitive. Not
         #   sure how? It uses bufhidden=delete instead of hide.
-        commit['bufnr'] = _create_scratch_buffer(commit['filecontents'].split('\n'), 'diff', should_stay_open=False)
+        commit['bufnr'] = _create_scratch_buffer(commit['filecontents'].split('\n'), 'diff', filepath, should_stay_open=False)
 
     vim.options['lazyredraw'] = old_lazyredraw
 
@@ -359,5 +360,15 @@ def setup_buffer_log(filepath, limit):
     vim.vars['sovereign_qf_scratch'] = vim.Dictionary(qf_what)
     vim.eval('setqflist([], " ", g:sovereign_qf_scratch)')
     vim.command('unlet g:sovereign_qf_scratch')
+
+# Sedit {{{1
+
+@vim_error_on_fail
+def jump_to_originator():
+    try:
+        originator = vim.current.buffer.vars['sovereign_originator'].decode('utf-8')
+        vim.command('edit '+ originator)
+    except KeyError as e:
+        pass
 
 # }}}
