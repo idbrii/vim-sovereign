@@ -311,8 +311,10 @@ class Repo(object):
 
     def cat_file(self, filepath, revision):
         f = self._cat_file_unprocessed(filepath, revision)
-        # Remove incorrect trailing space
-        return f[:-1]
+        # Remove incorrect trailing space character
+        if f[-1].isspace():
+            f = f[:-1]
+        return f
 
     def cat_file_as_list(self, filepath, revision):
         # Assume repo holds files in windows-style \r\n because vim won't
@@ -324,9 +326,13 @@ class Repo(object):
         if len(p) < 2:
             # No match means it's not crlf. Assume local os line endings.
             p = f.split(os.linesep)
-        # Now that line endings are cleaned up, we can remove incorrect
-        # trailing space. Doing earlier would leave on \r in the file.
-        return p[:-1]
+        # svn emits a trailing \r. When line endings are \r\n, it sometimes
+        # results in an empty line at the end and sometimes is cleaned up by
+        # the split. When line endings are \n, it's a line with an \r. Either
+        # way, try to clean the extra line.
+        if p[-1].isspace() or len(p[-1]) == 0:
+            p = p[:-1]
+        return p
 
     def get_log_text(self, filepath, limit=10, revision_from=None, revision_to=None):
         """Get log buffer text for log
