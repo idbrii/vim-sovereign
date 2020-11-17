@@ -138,8 +138,11 @@ function! sovereign#diff(...) abort
     DiffBoth
 endfunction
 
-function! sovereign#log(limit) abort
-    let path = expand('%:p')
+function! sovereign#log(limit, filepath) abort
+    let path = expand(a:filepath)
+    if empty(path)
+        let path = expand('%:p')
+    endif
 
     let cmd = printf('sovereignapi.setup_buffer_log("%s", %i)', s:to_unix_path_sep(path), a:limit)
     if !s:pyeval(cmd)
