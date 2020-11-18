@@ -310,7 +310,7 @@ class Repo(object):
         first_rel_path = self._to_svnroot_relative_path(self._staged_files[0])
         log = self._client.log_default(rel_filepath=first_rel_path, limit=1)
         # Clear staging now that they're submitted.
-        self._staged_files = self._staged_files[:]
+        self._staged_files.clear()
         for line in log:
             # Return the first (should be only) result.
             return True, 'Committed revision {}.'.format(line.revision)
