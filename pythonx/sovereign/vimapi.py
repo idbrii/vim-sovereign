@@ -205,9 +205,10 @@ def change_item_no_expand(linenum, line, direction):
     w.cursor = (i, c[1])
 
 
-def _get_file_from_line(line):
+def _get_abs_filepath_from_line(line, r):
     file_start = line.find(' ')
-    return line[file_start+1:]
+    rel_path = line[file_start+1:]
+    return r.relative_to_absolute(rel_path)
 
 def edit(linenum, line, how):
     """Edit the file in the previous window.
@@ -215,7 +216,7 @@ def edit(linenum, line, how):
     edit(int, str, str) -> None
     """
     r = repos[vim.current.buffer]
-    filepath = p.join(r._root_dir, _get_file_from_line(line))
+    filepath = _get_abs_filepath_from_line(line, r)
     vim.command('wincmd p')
     vim.command(how +' '+ filepath)
 
@@ -257,12 +258,12 @@ def status_stage_unstage(linenum, line):
             while not line.isspace():
                 line = vim.current.buffer[i]
                 print('|' + line)
-                r.request_stage_toggle(_get_file_from_line(line))
+                r.request_stage_toggle(_get_abs_filepath_from_line(line, r))
                 i += 1
         except IndexError:
             pass
     else:
-        r.request_stage_toggle(_get_file_from_line(line))
+        r.request_stage_toggle(_get_abs_filepath_from_line(line, r))
     _set_buffer_text_status(vim.current.buffer, r)
 
 

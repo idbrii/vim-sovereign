@@ -89,6 +89,11 @@ class Repo(object):
         self._staged_files = []
 
     def _to_svnroot_relative_path(self, filepath):
+        """Convert to relative paths. For display purposes only. We should
+        store paths as absolute.
+    
+        _to_svnroot_relative_path(str) -> str
+        """
         f = p.realpath(p.abspath(p.expanduser(filepath)))
         # For some reason, relpath sometimes gives results relative to
         # cwd insted of to the input path. Use replace instead.
@@ -96,6 +101,9 @@ class Repo(object):
         f = p.relpath(f, self._root_dir)
         assert f == f.replace(self._root_dir + p.sep, ''), "relpath returned a different result than replace"
         return f
+
+    def relative_to_absolute(self, rel_filepath):
+        return p.join(self._root_dir, rel_filepath)
 
     def get_branch(self):
         i = self._client.info()
@@ -143,6 +151,11 @@ class Repo(object):
 """.format(self.get_branch(), staged, unstaged, untracked)
 
     def request_stage_toggle(self, filepath):
+        """Toggle whether input file is staged.
+
+        Requires absolute filepaths.
+        """
+        assert p.isabs(filepath)
         if filepath in self._staged_files:
             self.request_unstage(filepath)
         else:
@@ -153,12 +166,15 @@ class Repo(object):
     
         request_stage(str) -> None
         """
-        file_status = self._client.status(filepath)
+        assert p.isabs(filepath)
+        rel_path = self._to_svnroot_relative_path(filepath)
+        file_status = self._client.status(rel_path)
         for s in file_status:
             if s.type == svn.constants.ST_UNVERSIONED:
-                self._client.add(filepath)
+                self._client.add(rel_path)
                 break
-        self._staged_files.append(filepath)
+        if filepath not in self._staged_files:
+            self._staged_files.append(filepath)
 
     def request_unstage(self, filepath):
         """Remove the input file from staging.
@@ -167,12 +183,15 @@ class Repo(object):
     
         request_unstage(str) -> None
         """
+        assert p.isabs(filepath)
         self._staged_files.remove(filepath)
-        file_status = self._client.status(filepath)
+        rel_path = self._to_svnroot_relative_path(filepath)
+        file_status = self._client.status(rel_path)
         for s in file_status:
             if s.type == svn.constants.ST_ADDED:
-                # self._client.revert doesn't exist
-                r = self._client.run_command('revert', [p.join(self._root_dir, filepath)])
+                # self._client.revert doesn't exist. Since we're calling svn
+                # directly, use the absolute path.
+                r = self._client.run_command('revert', [filepath])
                 print(r)
 
     def _get_stage_status(self):
@@ -185,7 +204,8 @@ class Repo(object):
         untracked = []
         root_len = len(self._root_dir) + 1
         for status in self._client.status():
-            if status.name[root_len:] in self._staged_files:
+            # status contains absolute paths
+            if status.name in self._staged_files:
                 staged.append(status)
             elif status.type == svn.constants.ST_UNVERSIONED:
                 untracked.append(status)
@@ -287,7 +307,8 @@ class Repo(object):
 
         # Unfortunately, commit doesn't return anything so we need to lookup
         # the revision ourselves.
-        log = self._client.log_default(rel_filepath=self._staged_files[0], limit=1)
+        first_rel_path = self._to_svnroot_relative_path(self._staged_files[0])
+        log = self._client.log_default(rel_filepath=first_rel_path, limit=1)
         # Clear staging now that they're submitted.
         self._staged_files = self._staged_files[:]
         for line in log:
@@ -306,7 +327,8 @@ class Repo(object):
         self._client.update(single_file, revision)
 
     def _cat_file_unprocessed(self, filepath, revision):
-        f = self._client.cat(self._to_svnroot_relative_path(filepath), revision)
+        rel_path = self._to_svnroot_relative_path(filepath)
+        f = self._client.cat(rel_filepath=rel_path, revision=revision)
         # svn.client.cat returns binary output, so it doesn't convert to
         # unicode, but we assume all files we cat will be text files that can
         # be unicode.
@@ -322,37 +344,40 @@ class Repo(object):
         return f
 
     def cat_file_as_list(self, filepath, revision):
+        assert p.isabs(filepath)
         # Assume repo holds files in windows-style \r\n because vim won't
         # represent \r as a line ending even with ff=dos.
         # (We could strip \r line endings, but splitting on line endings once
         # seems more correct.)
         f = self._cat_file_unprocessed(filepath, revision)
-        p = f.split('\r\n')
-        if len(p) < 2:
+        processed = f.split('\r\n')
+        if len(processed) < 2:
             # No match means it's not crlf. Assume local os line endings.
-            p = f.split(os.linesep)
+            processed = f.split(os.linesep)
+        f = processed
         # svn emits a trailing \r. When line endings are \r\n, it sometimes
         # results in an empty line at the end and sometimes is cleaned up by
         # the split. When line endings are \n, it's a line with an \r. Either
         # way, try to clean the extra line.
-        if p[-1].isspace() or len(p[-1]) == 0:
-            p = p[:-1]
-        return p
+        if f[-1].isspace() or len(f[-1]) == 0:
+            f = f[:-1]
+        return f
 
     def get_log_text(self, filepath, limit=10, include_diff=True, revision_from=None, revision_to=None):
         """Get log buffer text for log
     
         log(str, int) -> str
         """
-        rel_filepath = self._to_svnroot_relative_path(filepath)
+        assert p.isabs(filepath)
+
         log = self._client.log_default(
-            rel_filepath = rel_filepath,
+            rel_filepath = self._to_svnroot_relative_path(filepath),
             limit = limit,
             revision_from = revision_from,
             revision_to = revision_to,
         )
 
-        full_url_or_path = p.join(self._root_dir, filepath)
+        full_url_or_path = filepath
 
         if include_diff:
             def get_diff(entry):
@@ -391,8 +416,9 @@ Date:   {date}
 
 
     def get_buffer_name_for_file(self, filepath, revision):
-        filepath = self._to_svnroot_relative_path(p.expanduser(filepath))
-        i = self._client.info(filepath, revision)
+        assert p.isabs(filepath)
+        rel_path = self._to_svnroot_relative_path(filepath)
+        i = self._client.info(rel_path=rel_path, revision=revision)
         name = i['url']
         colon = name.find(':')
         assert colon > 0, "Expected url always includes a protocol"
@@ -448,12 +474,12 @@ def test():
             # Setup test case
             subdir = p.join(repo_root, 'subdir')
             os.makedirs(subdir, exist_ok=True)
-            r.request_stage(r._to_svnroot_relative_path(subdir))
+            r.request_stage(subdir)
             files = [hello, modified_by_test, nestedhi, trailnewline]
             for fpath in files:
                 with open(fpath, 'w', encoding='utf8') as f:
                     f.write("hello\n") 
-                r.request_stage(r._to_svnroot_relative_path(fpath))
+                r.request_stage(fpath)
             r.commit(io.StringIO("setup repo\n\nlonger message goes here\n"))
             print('Created test svn repo.')
         else:
@@ -469,8 +495,8 @@ def test():
     print('Before staging some files')
     pp.pprint(r._staged_files)
     print()
-    r.request_stage('modified_by_test')
-    r.request_stage('subdir/nestedhi')
+    r.request_stage(modified_by_test)
+    r.request_stage(nestedhi)
     print('After staging some files')
     pp.pprint(r._staged_files)
     print()
@@ -499,7 +525,7 @@ def test():
     print()
 
     print('Slog')
-    log = r.get_log_text('hello')
+    log = r.get_log_text(hello)
     print(log)
     print(log[0]['filecontents'])
     # hist = r._client.log_default(rel_filepath='hello', limit=1)
@@ -509,8 +535,8 @@ def test():
 
     print('After unstaging some files')
     if not allow_commit:
-        r.request_unstage('modified_by_test')
-        r.request_unstage('subdir/nestedhi')
+        r.request_unstage(modified_by_test)
+        r.request_unstage(nestedhi)
     pp.pprint(r._staged_files)
 
     print()

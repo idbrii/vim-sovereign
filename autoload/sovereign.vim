@@ -68,7 +68,7 @@ function! sovereign#branch_name() abort
         return s:sovereign_branch_cached
     endif
     
-    let path = expand('%')
+    let path = expand('%:p')
     let cmd = printf('sovereignapi.get_branch("%s")', s:to_unix_path_sep(path))
     if !s:pyeval(cmd)
         return '--'
@@ -79,7 +79,7 @@ function! sovereign#branch_name() abort
 endfunction
 
 function! sovereign#status() abort
-    let path = expand('%')
+    let path = expand('%:p')
     call s:create_scratch('split', 'sovereign-status')
     let cmd = printf('sovereignapi.setup_buffer_status("%s")', s:to_unix_path_sep(path))
     if !s:pyeval(cmd)
@@ -95,6 +95,7 @@ function! sovereign#stage(...) abort
     else
         let path = a:000[0]
     endif
+    let path = fnamemodify(path, ':p')
 
     let cmd = printf('sovereignapi.stage_file("%s")', s:to_unix_path_sep(path))
     if !s:pyeval(cmd)
@@ -151,6 +152,7 @@ function! sovereign#log(limit, filepath, showdiff) abort
     if empty(path)
         let path = expand('%:p')
     endif
+    let path = fnamemodify(path, ':p')
 
     let cmd = printf('sovereignapi.setup_buffer_log("%s", %i, %s)', s:to_unix_path_sep(path), a:limit, s:to_py_bool(a:showdiff))
     if !s:pyeval(cmd)
