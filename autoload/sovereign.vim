@@ -14,6 +14,24 @@ else
     endf
 endif
 
+" Our vimapi requires absolute paths and Python requires them in unix format.
+function! s:to_python_safe_path(path)
+    return fnamemodify(s:to_unix_path_sep(a:path), ':p')
+endf
+
+" No args means default -- current buffer.
+function! s:get_safe_path_from_args(args)
+    if len(a:args) == 0
+        " For empty a:000 or empty str use current.
+        let path = expand('%')
+    elseif type(a:args) == type([])
+        let path = expand(a:args[0])
+    else
+        let path = expand(a:args)
+    endif
+    return s:to_python_safe_path(path)
+endf
+
 function! s:pyeval(cmd)
     try
         call pyxeval(a:cmd)
@@ -68,8 +86,8 @@ function! sovereign#branch_name() abort
         return s:sovereign_branch_cached
     endif
     
-    let path = expand('%:p')
-    let cmd = printf('sovereignapi.get_branch("%s")', s:to_unix_path_sep(path))
+    let path = s:to_python_safe_path('%')
+    let cmd = printf('sovereignapi.get_branch("%s")', path)
     if !s:pyeval(cmd)
         return '--'
     endif
@@ -79,9 +97,9 @@ function! sovereign#branch_name() abort
 endfunction
 
 function! sovereign#status() abort
-    let path = expand('%:p')
+    let path = s:to_python_safe_path('%')
     call s:create_scratch('split', 'sovereign-status')
-    let cmd = printf('sovereignapi.setup_buffer_status("%s")', s:to_unix_path_sep(path))
+    let cmd = printf('sovereignapi.setup_buffer_status("%s")', path)
     if !s:pyeval(cmd)
         bdelete
         return
@@ -90,32 +108,23 @@ function! sovereign#status() abort
 endfunction
 
 function! sovereign#stage(...) abort
-    if len(a:000) == 0
-        let path = expand('%')
-    else
-        let path = a:000[0]
-    endif
-    let path = fnamemodify(path, ':p')
+    let path = s:get_safe_path_from_args(a:000)
 
-    let cmd = printf('sovereignapi.stage_file("%s")', s:to_unix_path_sep(path))
+    let cmd = printf('sovereignapi.stage_file("%s")', path)
     if !s:pyeval(cmd)
         return
     endif
 endfunction
 
 function! sovereign#commit(...) abort
-    if len(a:000) == 0
-        let path = expand('%:p')
-    else
-        let path = fnamemodify(a:000[0], ':p')
-    endif
+    let path = s:get_safe_path_from_args(a:000)
 
-    let f = tempname() . '_commit'
+    let f = s:to_python_safe_path(tempname() . '_commit')
     call execute('split '. f)
     wincmd _
     " We copy git formatting, so use their syntax.
     setfiletype gitcommit
-    let cmd = printf('sovereignapi.setup_buffer_commit("%s", "%s")', s:to_unix_path_sep(path), s:to_unix_path_sep(f))
+    let cmd = printf('sovereignapi.setup_buffer_commit("%s", "%s")', path, f)
     if !s:pyeval(cmd)
         return
     endif
@@ -123,22 +132,15 @@ endfunction
 
 function! sovereign#diff(...) abort
     let revision = 'HEAD'
-    if len(a:000) == 0
-        let path = '%'
-    elseif len(a:000) == 1
-        let path = a:000[0]
-    else
-        let path = a:000[0]
+    let path = s:get_safe_path_from_args(a:000)
+    if len(a:000) > 1
         let revision = a:000[1]
     endif
-
-    let path = expand(path)
-    let path = fnamemodify(path, ':p')
 
     let old_ft = &l:filetype
     call s:create_scratch('vsplit', '')
     let &l:filetype = old_ft
-    let cmd = printf('sovereignapi.setup_buffer_cat("%s", "%s")', s:to_unix_path_sep(path), revision)
+    let cmd = printf('sovereignapi.setup_buffer_cat("%s", "%s")', path, revision)
     if !s:pyeval(cmd)
         bdelete
         return
@@ -148,13 +150,9 @@ function! sovereign#diff(...) abort
 endfunction
 
 function! sovereign#log(limit, filepath, showdiff) abort
-    let path = expand(a:filepath)
-    if empty(path)
-        let path = expand('%:p')
-    endif
-    let path = fnamemodify(path, ':p')
+    let path = s:get_safe_path_from_args(a:filepath)
 
-    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i, %s)', s:to_unix_path_sep(path), a:limit, s:to_py_bool(a:showdiff))
+    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i, %s)', path, a:limit, s:to_py_bool(a:showdiff))
     if !s:pyeval(cmd)
         return
     endif
