@@ -135,6 +135,8 @@ def setup_buffer_status(filepath):
     b = vim.current.buffer
     _set_buffer_text_status(b, r)
 
+    _autocmd('sovereign', 'BufEnter', '<buffer>', 'status_refresh')
+
     # Copying the interface from fugitive so it's familiar to fugitive users
     # (like me).
     _map('n', '<C-N>', 'change_item_no_expand', 1)
@@ -267,7 +269,7 @@ def status_stage_unstage(linenum, line):
     _set_buffer_text_status(vim.current.buffer, r)
 
 
-def status_refresh(linenum, line):
+def status_refresh(*_):
     r = repos[vim.current.buffer]
     _set_buffer_text_status(vim.current.buffer, r)
 
