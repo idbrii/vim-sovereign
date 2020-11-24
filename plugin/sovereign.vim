@@ -9,5 +9,5 @@ command! -nargs=* Sadd call sovereign#stage(<f-args>)
 command! -nargs=* Scommit call sovereign#commit(<f-args>)
 command! -nargs=* Sdiff call sovereign#diff(<f-args>)
 " Hide diff if bang is included.
-command! -nargs=* -count=10 -bang Slog call sovereign#log(<count>, <q-args>, <bang>1)
+command! -nargs=* -count=10 -bang Slog call sovereign#log(<count>, <bang>1, <f-args>)
 command! Sedit call sovereign#edit()

@@ -149,13 +149,14 @@ function! sovereign#diff(...) abort
     DiffBoth
 endfunction
 
-function! sovereign#log(limit, filepath, showdiff) abort
-    let path = s:get_safe_path_from_args(a:filepath)
+function! sovereign#log(limit, showdiff, ...) abort
+    let path = s:get_safe_path_from_args(a:000)
+    let g:sovereign_scratch = a:000[1:]
 
-    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i, %s)', path, a:limit, s:to_py_bool(a:showdiff))
+    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i, %s, "sovereign_scratch")', path, a:limit, s:to_py_bool(a:showdiff))
     if !s:pyeval(cmd)
-        return
     endif
+    unlet g:sovereign_scratch
 endfunction
 
 function! sovereign#edit() abort
