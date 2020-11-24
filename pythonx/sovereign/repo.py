@@ -148,7 +148,7 @@ class Repo(object):
         staged, unstaged, untracked = self._get_stage_status_text(fmt, headers)
         return """Head: {} 
 {}{}{}
-""".format(self.get_branch(), staged, unstaged, untracked)
+""".format(self.get_branch(), untracked, unstaged, staged)
 
     def request_stage_toggle(self, filepath):
         """Toggle whether input file is staged.
