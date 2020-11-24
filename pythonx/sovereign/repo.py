@@ -146,9 +146,9 @@ class Repo(object):
             '\nUntracked ({count})',
         ]
         staged, unstaged, untracked = self._get_stage_status_text(fmt, headers)
-        return """Head: {} 
-{}{}{}
-""".format(self.get_branch(), untracked, unstaged, staged)
+        return f"""Head: {self.get_branch()} 
+{untracked}{unstaged}{staged}
+"""
 
     def request_stage_toggle(self, filepath):
         """Toggle whether input file is staged.
@@ -252,23 +252,16 @@ class Repo(object):
         ]
         staged, unstaged, untracked = self._get_stage_status_text(fmt, headers)
         diff = "\n".join([self._unified_diff(staged_file, 'HEAD', '') for staged_file in self._staged_files])
-        txt = '''
+        txt = f'''
 # Please enter the commit message for your changes. Lines starting
 # with '#' will be ignored, and an empty message aborts the commit.
 #
-# On branch {branch}
+# On branch {self.get_branch()}
 {staged}{unstaged}{untracked}#
-# {snip}
+# {_SNIP_MARKER}
 # Do not modify or remove the line above.
 # Everything below it will be ignored.
-{diff}'''.format(
-    branch=self.get_branch(),
-    staged=staged,
-    unstaged=unstaged,
-    untracked=untracked,
-    diff=diff,
-    snip=_SNIP_MARKER,
-)
+{diff}'''
         return txt
 
     def _unified_diff(self, full_url_or_path, old, new):
