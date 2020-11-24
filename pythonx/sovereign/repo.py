@@ -207,8 +207,10 @@ class Repo(object):
             # status contains absolute paths
             if status.name in self._staged_files:
                 staged.append(status)
-            elif status.type == svn.constants.ST_NORMAL:
+            elif status.type == svn.constants.ST_NORMAL or status.changelist == 'ignore-on-commit':
                 # Ignore normal files. They should only show up from changelists.
+                # Ignore 'ignore-on-commit' changelist. This is a TortoiseSVN
+                # convention for a commit you never commit from.
                 continue
             elif status.type == svn.constants.ST_UNVERSIONED:
                 untracked.append(status)
