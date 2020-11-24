@@ -363,7 +363,7 @@ class Repo(object):
             f = f[:-1]
         return f
 
-    def get_log_text(self, filepath, limit=10, include_diff=True, revision_from=None, revision_to=None):
+    def get_log_text(self, filepath, limit=10, include_diff=True, revision_from=None, revision_to=None, query=None):
         """Get log buffer text for log
     
         log(str, int) -> str
@@ -375,6 +375,7 @@ class Repo(object):
             limit = limit,
             revision_from = revision_from,
             revision_to = revision_to,
+            search = query,
         )
 
         full_url_or_path = filepath
@@ -453,6 +454,17 @@ def create_status_buffer(working_copy_file):
 
 def test():
     allow_commit = False # True
+
+    # Useful for debugging status()
+    def get_all_attr(item):
+        return [a for a in dir(item) if a[0] != '_' and a not in ['count', 'index']]
+    def print_status(status):
+        if not status:
+            return
+        for s in status:
+            names = [a for a in get_all_attr(s)]
+            names = {a : getattr(s, a) for a in names}
+            pp.pprint(names)
 
     # Create the svn repo with:
     #   repo=/Users/idbrii/data/code/svntest/repo

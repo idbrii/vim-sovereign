@@ -326,12 +326,14 @@ def setup_buffer_cat(filepath, revision):
 # Slog {{{1
 
 @vim_error_on_fail
-def setup_buffer_log(filepath, limit, showdiff):
+def setup_buffer_log(filepath, limit, showdiff, args_var):
     """
     setup_buffer_log(string, int, int) -> None
     """
     r = _get_repo(filepath, vim.current.buffer)
-    qf_items = r.get_log_text(filepath, limit=limit, include_diff=showdiff)
+    log_args = [s.decode('utf-8') for s in vim.vars[args_var]]
+    log_args = " ".join(log_args)
+    qf_items = r.get_log_text(filepath, limit=limit, include_diff=showdiff, query=log_args)
     items = []
 
     old_lazyredraw = vim.options['lazyredraw']
