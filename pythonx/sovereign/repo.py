@@ -220,12 +220,11 @@ class Repo(object):
     
         _get_stage_status_text() -> str, str, str
         """
+        def convert(i,c):
+            return [headers[i].format(count=len(c))] + [fmt(status) for status in c]
+
         staged, unstaged, untracked = self._get_stage_status()
-        staged, unstaged, untracked = [
-            [headers[i].format(count=len(c))]
-            + [fmt(status)
-               for status in c]
-            for i,c in enumerate([staged, unstaged, untracked])]
+        staged, unstaged, untracked = [convert(i,c) for i,c in enumerate([staged, unstaged, untracked])]
 
         def _join_if_has_files(files):
             if len(files) > 1:
