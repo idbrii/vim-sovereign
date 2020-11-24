@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 
 from email.utils import format_datetime
+import itertools
 import os
 import os.path as p
 import pprint as pp
@@ -134,6 +135,9 @@ class Repo(object):
         # 
         # Staged (1)
         # A pythonx/sovereign.py
+        #
+        # Changelist[hello] (1)
+        # M pythonx/vimapi.py
 
         def fmt(status):
             # Print in this style:
@@ -144,10 +148,13 @@ class Repo(object):
             '\nStaged ({count})',
             '\nUnstaged ({count})',
             '\nUntracked ({count})',
+            # changelist must be last
+            '\nChangelist[{title}] ({count})',
         ]
-        staged, unstaged, untracked = self._get_stage_status_text(fmt, headers)
+        staged, unstaged, listed, untracked = self._get_stage_status_text(fmt, headers)
         return f"""Head: {self.get_branch()} 
 {untracked}{unstaged}{staged}
+{listed}
 """
 
     def request_stage_toggle(self, filepath):
@@ -201,6 +208,7 @@ class Repo(object):
         """
         staged    = []
         unstaged  = []
+        listed    = []
         untracked = []
         root_len = len(self._root_dir) + 1
         for status in self._client.status():
@@ -214,10 +222,12 @@ class Repo(object):
                 continue
             elif status.type == svn.constants.ST_UNVERSIONED:
                 untracked.append(status)
+            elif status.changelist:
+                listed.append(status)
             else:
                 unstaged.append(status)
 
-        return staged, unstaged, untracked
+        return staged, unstaged, listed, untracked
 
 
     def _get_stage_status_text(self, fmt, headers):
@@ -225,18 +235,29 @@ class Repo(object):
     
         _get_stage_status_text() -> str, str, str
         """
-        def convert(i,c):
-            return [headers[i].format(count=len(c))] + [fmt(status) for status in c]
 
-        staged, unstaged, untracked = self._get_stage_status()
-        staged, unstaged, untracked = [convert(i,c) for i,c in enumerate([staged, unstaged, untracked])]
+        def convert(h,c,title):
+            return [h.format(count=len(c), title=title)] + [fmt(status) for status in c]
+
+        def convert_cl(h,c):
+            grouped = {status.changelist : [] for status in c}
+            for status in c:
+                grouped[status.changelist].append(status)
+            # merge lists for each group of changelists into one.
+            sorted_keys = sorted(grouped.keys())
+            lines = itertools.chain.from_iterable(convert(h,grouped[title],title) for title in sorted_keys)
+            return list(lines)
+
+        staged, unstaged, listed, untracked = self._get_stage_status()
+        staged, unstaged, untracked = [convert(headers[i],c,None) for i,c in enumerate([staged, unstaged, untracked])]
+        listed = convert_cl(headers[-1],listed)
 
         def _join_if_has_files(files):
             if len(files) > 1:
                 return "\n".join(files) + "\n"
             return ""
-        staged, unstaged, untracked = [_join_if_has_files(x) for x in [staged, unstaged, untracked]]
-        return staged, unstaged, untracked
+        staged, unstaged, listed, untracked = [_join_if_has_files(x) for x in [staged, unstaged, listed, untracked]]
+        return staged, unstaged, listed, untracked
 
 
     def _commit_text(self):
@@ -249,15 +270,18 @@ class Repo(object):
             '#\n# Changes to be committed:',
             '#\n# Changes not staged for commit:',
             '#\n# Untracked files:',
+            # changelist must be last
+            '#\n# Changelist[{title}] not staged for commit:',
         ]
-        staged, unstaged, untracked = self._get_stage_status_text(fmt, headers)
+        staged, unstaged, listed, untracked = self._get_stage_status_text(fmt, headers)
         diff = "\n".join([self._unified_diff(staged_file, 'HEAD', '') for staged_file in self._staged_files])
         txt = f'''
 # Please enter the commit message for your changes. Lines starting
 # with '#' will be ignored, and an empty message aborts the commit.
 #
 # On branch {self.get_branch()}
-{staged}{unstaged}{untracked}#
+{staged}{unstaged}{untracked}
+{listed}#
 # {_SNIP_MARKER}
 # Do not modify or remove the line above.
 # Everything below it will be ignored.
@@ -478,13 +502,15 @@ def test():
     modified_by_test = p.join(repo_root, 'modified_by_test')
     nestedhi = p.join(repo_root, 'subdir/nestedhi')
     trailnewline = p.join(repo_root, 'subdir/hastrailingnewline')
-    if not p.isfile(hello):
+    file_for_cl1 = p.join(repo_root, 'subdir/file_for_cl1')
+    file_for_cl2 = p.join(repo_root, 'subdir/file_for_cl2')
+    files = [hello, modified_by_test, nestedhi, trailnewline, file_for_cl1, file_for_cl2]
+    if not all(p.isfile(f) for f in files):
         if allow_commit:
             # Setup test case
             subdir = p.join(repo_root, 'subdir')
             os.makedirs(subdir, exist_ok=True)
             r.request_stage(subdir)
-            files = [hello, modified_by_test, nestedhi, trailnewline]
             for fpath in files:
                 with open(fpath, 'w', encoding='utf8') as f:
                     f.write("hello\n") 
@@ -496,17 +522,21 @@ def test():
         return
     
 
-    with open(modified_by_test, 'w', encoding='utf8') as f:
-        f.write("modifying this file\n") 
-        f.write(str(datetime.datetime.now())) 
-        f.write("\n") 
+    for fname in [modified_by_test, file_for_cl1, file_for_cl2]:
+        with open(fname, 'w', encoding='utf8') as f:
+            f.write("modifying this file\n") 
+            f.write(str(datetime.datetime.now())) 
+            f.write("\n") 
 
-    print('Before staging some files')
+    r._client.run_command('changelist', ['my-cl', file_for_cl1])
+    r._client.run_command('changelist', ['another-cl', file_for_cl2])
+
+    print('Stage: Before staging some files')
     pp.pprint(r._staged_files)
     print()
     r.request_stage(modified_by_test)
     r.request_stage(nestedhi)
-    print('After staging some files')
+    print('Stage: After staging some files')
     pp.pprint(r._staged_files)
     print()
     print()
@@ -529,6 +559,7 @@ def test():
     print('Sstatus')
     print(r._status_text())
     print()
+
     print('Sdiff')
     print(r.cat_file(trailnewline, 'HEAD'))
     print()
@@ -542,11 +573,14 @@ def test():
     #     pp.pprint(h)
     print()
 
-    print('After unstaging some files')
+    print('Stage: After unstaging some files')
     if not allow_commit:
         r.request_unstage(modified_by_test)
         r.request_unstage(nestedhi)
     pp.pprint(r._staged_files)
+
+    r._client.run_command('changelist', ['--remove', file_for_cl1])
+    r._client.run_command('changelist', ['--remove', file_for_cl2])
 
     print()
     print('done')
