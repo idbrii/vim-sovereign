@@ -207,6 +207,9 @@ class Repo(object):
             # status contains absolute paths
             if status.name in self._staged_files:
                 staged.append(status)
+            elif status.type == svn.constants.ST_NORMAL:
+                # Ignore normal files. They should only show up from changelists.
+                continue
             elif status.type == svn.constants.ST_UNVERSIONED:
                 untracked.append(status)
             else:
