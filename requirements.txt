@@ -1,1 +1,1 @@
-svn>=1.0.1
+-e git+https://github.com/idbrii/PySvn.git@unstable#egg=svn
