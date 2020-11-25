@@ -208,9 +208,16 @@ def change_item_no_expand(linenum, line, direction):
 
 
 def _get_abs_filepath_from_line(line, r):
+    if not line or line.isspace():
+        # these might eval to '.' and cause badness
+        return None
     file_start = line.find(' ')
     rel_path = line[file_start+1:]
-    return r.relative_to_absolute(rel_path)
+    abs_path = r.relative_to_absolute(rel_path)
+    if p.isabs(abs_path):
+        return abs_path
+    return None
+    
 
 def edit(linenum, line, how):
     """Edit the file in the previous window.
@@ -271,16 +278,18 @@ def status_stage_unstage(linenum, line):
     if is_header:
         # Get everything in block
         try:
-            i = linenum + 1
-            while not line.isspace():
-                line = vim.current.buffer[i]
-                print('|' + line)
-                r.request_stage_toggle(_get_abs_filepath_from_line(line, r))
-                i += 1
+            # LIMIT(safety): Limit stage 10 files at a time to avoid runaway failures.
+            for i in range(1, 10):
+                line = vim.current.buffer[linenum + i]
+                abs_path = _get_abs_filepath_from_line(line, r)
+                if not abs_path:
+                    break
+                r.request_stage_toggle(abs_path)
         except IndexError:
             pass
     else:
-        r.request_stage_toggle(_get_abs_filepath_from_line(line, r))
+        abs_path = _get_abs_filepath_from_line(line, r)
+        r.request_stage_toggle(abs_path)
     _set_buffer_text_status(vim.current.buffer, r)
 
 
