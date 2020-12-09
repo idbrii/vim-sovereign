@@ -338,6 +338,10 @@ def on_close_commit_buffer(commit_msg_filepath):
 
 @vim_error_on_fail
 def setup_buffer_cat(filepath, revision):
+    if not revision or revision == 'HAVE':
+        # Default to HAVE revision.
+        revision = None
+
     r = _get_repo(filepath, vim.current.buffer)
     b = vim.current.buffer
     b[:] = r.cat_file_as_list(filepath, revision)
