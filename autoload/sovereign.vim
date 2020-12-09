@@ -16,7 +16,7 @@ endif
 
 " Our vimapi requires absolute paths and Python requires them in unix format.
 function! s:to_python_safe_path(path)
-    return fnamemodify(s:to_unix_path_sep(a:path), ':p')
+    return resolve(fnamemodify(s:to_unix_path_sep(a:path), ':p'))
 endf
 
 " No args means default -- current buffer.
