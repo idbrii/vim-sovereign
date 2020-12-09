@@ -131,7 +131,7 @@ function! sovereign#commit(...) abort
 endfunction
 
 function! sovereign#diff(...) abort
-    let revision = 'HEAD'
+    let revision = ''
     let path = s:get_safe_path_from_args(a:000)
     if len(a:000) > 1
         let revision = a:000[1]
