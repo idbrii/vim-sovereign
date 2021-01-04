@@ -403,7 +403,10 @@ class Repo(object):
 
         if include_diff:
             def get_diff(entry):
-                return self._unified_diff(full_url_or_path, entry.revision-1, entry.revision)
+                try:
+                    return self._unified_diff(full_url_or_path, entry.revision-1, entry.revision)
+                except svn.SvnException as e:
+                    return str(e)
         else:
             def get_diff(entry):
                 return ''
