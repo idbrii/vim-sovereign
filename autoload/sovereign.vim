@@ -87,7 +87,7 @@ function! sovereign#branch_name() abort
     endif
     
     let path = s:to_python_safe_path('%')
-    let cmd = printf('sovereignapi.get_branch("%s")', path)
+    let cmd = printf('sovereignapi.get_branch(r"%s")', path)
     if !s:pyeval(cmd)
         return '--'
     endif
@@ -99,7 +99,7 @@ endfunction
 function! sovereign#status() abort
     let path = s:to_python_safe_path('%')
     call s:create_scratch('split', 'sovereign-status')
-    let cmd = printf('sovereignapi.setup_buffer_status("%s")', path)
+    let cmd = printf('sovereignapi.setup_buffer_status(r"%s")', path)
     if !s:pyeval(cmd)
         bdelete
         return
@@ -110,7 +110,7 @@ endfunction
 function! sovereign#stage(...) abort
     let path = s:get_safe_path_from_args(a:000)
 
-    let cmd = printf('sovereignapi.stage_file("%s")', path)
+    let cmd = printf('sovereignapi.stage_file(r"%s")', path)
     if !s:pyeval(cmd)
         return
     endif
@@ -124,7 +124,7 @@ function! sovereign#commit(...) abort
     wincmd _
     " We copy git formatting, so use their syntax.
     setfiletype gitcommit
-    let cmd = printf('sovereignapi.setup_buffer_commit("%s", "%s")', path, f)
+    let cmd = printf('sovereignapi.setup_buffer_commit(r"%s", r"%s")', path, f)
     if !s:pyeval(cmd)
         return
     endif
@@ -140,7 +140,7 @@ function! sovereign#diff(...) abort
     let old_ft = &l:filetype
     call s:create_scratch('vsplit', '')
     let &l:filetype = old_ft
-    let cmd = printf('sovereignapi.setup_buffer_cat("%s", "%s")', path, revision)
+    let cmd = printf('sovereignapi.setup_buffer_cat(r"%s", r"%s")', path, revision)
     if !s:pyeval(cmd)
         bdelete
         return
@@ -153,7 +153,7 @@ function! sovereign#log(limit, showdiff, ...) abort
     let path = s:get_safe_path_from_args(a:000)
     let g:sovereign_scratch = a:000[1:]
 
-    let cmd = printf('sovereignapi.setup_buffer_log("%s", %i, %s, "sovereign_scratch")', path, a:limit, s:to_py_bool(a:showdiff))
+    let cmd = printf('sovereignapi.setup_buffer_log(r"%s", %i, %s, "sovereign_scratch")', path, a:limit, s:to_py_bool(a:showdiff))
     if !s:pyeval(cmd)
     endif
     unlet g:sovereign_scratch
