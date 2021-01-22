@@ -212,6 +212,10 @@ class Repo(object):
         untracked = []
         root_len = len(self._root_dir) + 1
         for status in self._client.status():
+            if not hasattr(status, 'changelist'):
+                # TODO: how to make this work properly?
+                # Backwards compatibility with pysvn 1.0
+                status.changelist = ''
             # status contains absolute paths
             if status.name in self._staged_files:
                 staged.append(status)
