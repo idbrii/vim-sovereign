@@ -82,12 +82,12 @@ def _func_args(args, kwargs):
 
     return out
 
-def _map(mode, key, funcname, *args, **kwargs):
+def _nmap(key, funcname, *args, **kwargs):
     args = _func_args(args, kwargs)
     # passes (linenum, line, ...) to funcname. linenum is the 0-index line
     # number in the buffer so vim.current.buffer[linenum] == line. (Vim uses
     # 1-indexing.)
-    vim.command('''{}noremap <buffer> {} :<C-u>call pyxeval(printf("sovereignapi.{}(%i, '%s'{})", line(".")-1, getline(".")))<CR>'''.format(mode, key, funcname, args))
+    vim.command('''nnoremap <buffer> {} :<C-u>call pyxeval(printf("sovereignapi.{}(%i, '%s'{})", line(".")-1, getline(".")))<CR>'''.format(key, funcname, args))
 
 def _vmap(key, funcname, *args, **kwargs):
     args = _func_args(args, kwargs)
@@ -146,50 +146,50 @@ def setup_buffer_status(filepath):
 
     # Copying the interface from fugitive so it's familiar to fugitive users
     # (like me).
-    _map('n', '<C-N>', 'change_item_no_expand', 1)
-    _map('n', '<C-P>', 'change_item_no_expand', -1)
+    _nmap('<C-N>', 'change_item_no_expand', 1)
+    _nmap('<C-P>', 'change_item_no_expand', -1)
 
-    _map('n', '<CR>',  'edit', 'edit')
-    _map('n', 'o',     'edit', 'split')
-    _map('n', 'O',     'edit', 'tabedit')
-    _map('n', 'gO',    'edit', 'vsplit')
+    _nmap('<CR>',  'edit', 'edit')
+    _nmap('o',     'edit', 'split')
+    _nmap('O',     'edit', 'tabedit')
+    _nmap('gO',    'edit', 'vsplit')
 
-    _map('n', 'c',     'commit', verbose=True)
-    _map('n', 'dd',    'diff_item', manage_win=True)
-    # _map('n', 'dq',          'diff_close')
+    _nmap('c',     'commit', verbose=True)
+    _nmap('dd',    'diff_item', manage_win=True)
+    # _nmap('dq',          'diff_close')
 
     # fugitive uses - for stage toggle, but I prefer s. easy to reach key and
     # more useful than separate stage/unstage.
-    _map('n', 's',     'status_stage_unstage')
+    _nmap('s',     'status_stage_unstage')
     _vmap('s',         'status_stage_unstage_range')
-    _map('n', '-',     'status_stage_unstage')
+    _nmap('-',     'status_stage_unstage')
     _vmap('-',         'status_stage_unstage_range')
-    _map('n', 'a',     'status_stage_unstage')
-    # _map('n', 'u',           'unstage')
+    _nmap('a',     'status_stage_unstage')
+    # _nmap('u',           'unstage')
 
-    _map('n', 'R',           'status_refresh')
+    _nmap('R',           'status_refresh')
 
-    _map('n', '.',           'populate_cmdline')
+    _nmap('.',           'populate_cmdline')
 
-    # _map('n', 'p',           'GF_pedit')
-    # _map('n', '<',           'InlineDiff_hide')
-    # _map('n', '>',           'InlineDiff_show')
-    # _map('n', '=',           'InlineDiff_toggle')
+    # _nmap('p',           'GF_pedit')
+    # _nmap('<',           'InlineDiff_hide')
+    # _nmap('>',           'InlineDiff_show')
+    # _nmap('=',           'InlineDiff_toggle')
 
-    # _map('n', 'J',           'jump_to_next_hunk')
-    # _map('n', 'K',           'jump_to_prev_hunk')
-    # _map('n', 'i',           'next_item_no_expand')
-    # _map('n', ']/',          'next_item')
-    # _map('n', '[/',          'PreviousFile')
-    # _map('n', ']m',          'next_item')
-    # _map('n', '[m',          'PreviousFile')
-    # _map('n', '(',           'prev_item_expand')
-    # _map('n', ')',           'next_item_expand')
+    # _nmap('J',           'jump_to_next_hunk')
+    # _nmap('K',           'jump_to_prev_hunk')
+    # _nmap('i',           'next_item_no_expand')
+    # _nmap(']/',          'next_item')
+    # _nmap('[/',          'PreviousFile')
+    # _nmap(']m',          'next_item')
+    # _nmap('[m',          'PreviousFile')
+    # _nmap('(',           'prev_item_expand')
+    # _nmap(')',           'next_item_expand')
 
-    # _map('n', ']]',          'NextSection')
-    # _map('n', '[[',          'PreviousSection')
-    # _map('n', '][',          'NextSectionEnd')
-    # _map('n', '[]',          'PreviousSectionEnd')
+    # _nmap(']]',          'NextSection')
+    # _nmap('[[',          'PreviousSection')
+    # _nmap('][',          'NextSectionEnd')
+    # _nmap('[]',          'PreviousSectionEnd')
 
     return None
 
