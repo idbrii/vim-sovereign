@@ -89,6 +89,13 @@ def _map(mode, key, funcname, *args, **kwargs):
     # 1-indexing.)
     vim.command('''{}noremap <buffer> {} :<C-u>call pyxeval(printf("sovereignapi.{}(%i, '%s'{})", line(".")-1, getline(".")))<CR>'''.format(mode, key, funcname, args))
 
+def _vmap(key, funcname, *args, **kwargs):
+    args = _func_args(args, kwargs)
+    # passes (startline, endline, ...) to funcname. firstline and lastline is
+    # the 0-index line number in the buffer so vim.current.buffer[linenum] ==
+    # line. (Vim uses 1-indexing.)
+    vim.command(f'''xnoremap <buffer> {key} :<C-u>call pyxeval(printf("sovereignapi.{funcname}(%i, %s{args})", line("'<")-1, line("'>")-1))<CR>''')
+
 def _autocmd(group, event, pattern, funcname, args=None):
     args = _func_args(args, None)
     vim.command(r'augroup '+ group)
@@ -151,8 +158,12 @@ def setup_buffer_status(filepath):
     _map('n', 'dd',    'diff_item', manage_win=True)
     # _map('n', 'dq',          'diff_close')
 
-    _map('n', 's',     'status_stage_unstage') # my remap. more useful than separate stage/unstage.
+    # fugitive uses - for stage toggle, but I prefer s. easy to reach key and
+    # more useful than separate stage/unstage.
+    _map('n', 's',     'status_stage_unstage')
+    _vmap('s',         'status_stage_unstage_range')
     _map('n', '-',     'status_stage_unstage')
+    _vmap('-',         'status_stage_unstage_range')
     _map('n', 'a',     'status_stage_unstage')
     # _map('n', 'u',           'unstage')
 
@@ -268,14 +279,16 @@ def diff_item(linenum, line, manage_win):
     # vim.command('resize') # full height
     vim.command('Sdiff')
 
+def is_status_header(line):
+    return line[1] != ' '
+
 def status_stage_unstage(linenum, line):
     r = repos[vim.current.buffer]
     is_valid = line and not line.isspace()
     if not is_valid:
         return
     
-    is_header = line[1] != ' '
-    if is_header:
+    if is_status_header(line):
         # Get everything in block
         try:
             # LIMIT(safety): Limit stage 10 files at a time to avoid runaway failures.
@@ -290,7 +303,24 @@ def status_stage_unstage(linenum, line):
     else:
         abs_path = _get_abs_filepath_from_line(line, r)
         r.request_stage_toggle(abs_path)
-    _set_buffer_text_status(vim.current.buffer, r)
+
+
+@vim_error_on_fail
+def status_stage_unstage_range(start, end):
+    if start > end:
+        raise IndexError("Error: Stage doesn't support backward ranges.")
+
+    r = repos[vim.current.buffer]
+    b = vim.current.buffer
+    for linenum in range(start, end+1):
+        line = b[linenum]
+        if line.isspace() or is_status_header(line):
+            break
+        
+        abs_path = _get_abs_filepath_from_line(line, r)
+        r.request_stage_toggle(abs_path)
+
+    _set_buffer_text_status(b, r)
 
 
 def status_refresh(*_):
