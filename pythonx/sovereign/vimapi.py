@@ -87,7 +87,7 @@ def _nmap(key, funcname, *args, **kwargs):
     # passes (linenum, line, ...) to funcname. linenum is the 0-index line
     # number in the buffer so vim.current.buffer[linenum] == line. (Vim uses
     # 1-indexing.)
-    vim.command('''nnoremap <buffer> {} :<C-u>call pyxeval(printf("sovereignapi.{}(%i, '%s'{})", line(".")-1, getline(".")))<CR>'''.format(key, funcname, args))
+    vim.command(f'''nnoremap <buffer> {key} :<C-u>call pyxeval(printf("sovereignapi.{funcname}(%i, '%s'{args})", line(".")-1, getline(".")))<CR>''')
 
 def _vmap(key, funcname, *args, **kwargs):
     args = _func_args(args, kwargs)
