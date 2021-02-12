@@ -170,6 +170,7 @@ def setup_buffer_status(filepath):
     _nmap('R',           'status_refresh')
 
     _nmap('.',           'populate_cmdline')
+    _vmap('.',           'populate_cmdline_range')
 
     # _nmap('p',           'GF_pedit')
     # _nmap('<',           'InlineDiff_hide')
@@ -251,6 +252,33 @@ def populate_cmdline(linenum, line):
     r = repos[vim.current.buffer]
     filepath = _get_abs_filepath_from_line(line, r)
     vim.vars['sovereign_scratch'] = filepath
+    os.chdir(r._root_dir)
+    vim.eval('feedkeys(":\<C-r>=g:sovereign_scratch\<CR>\<Home>! svn  \<Left>")')
+    # We have to leave sovereign_scratch dangling because we can't send another command.
+
+def populate_cmdline_range(start, end):
+    """Open vim cmdline with svn and current file pre populated.
+
+    Ideally, this would use :Svn which more nicely collects results from svn,
+    but that command doesn't exist.
+
+    populate_cmdline(int, str) -> None
+    """
+    if start > end:
+        raise IndexError("Error: Populate cmdline doesn't support backward ranges.")
+
+    r = repos[vim.current.buffer]
+    b = vim.current.buffer
+    files = []
+    for linenum in range(start, end+1):
+        line = b[linenum]
+        if line.isspace() or is_status_header(line):
+            break
+        
+        abs_path = _get_abs_filepath_from_line(line, r)
+        files.append(abs_path)
+
+    vim.vars['sovereign_scratch'] = " ".join(files)
     os.chdir(r._root_dir)
     vim.eval('feedkeys(":\<C-r>=g:sovereign_scratch\<CR>\<Home>! svn  \<Left>")')
     # We have to leave sovereign_scratch dangling because we can't send another command.
