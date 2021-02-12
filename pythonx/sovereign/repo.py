@@ -291,13 +291,19 @@ class Repo(object):
     def _unified_diff(self, full_url_or_path, old, new):
         # self._client.diff() doesn't work since it tries to give us the diff
         # in a list and I don't want to put it back together again.
-        d = self._client.run_command(
-            'diff',
-            ['--git',
-             '--old', '{0}@{1}'.format(full_url_or_path, old),
-             '--new', '{0}@{1}'.format(full_url_or_path, new),
-             ],
-            do_combine=True)
+        try:
+            d = self._client.run_command(
+                'diff',
+                ['--git',
+                 '--old', '{0}@{1}'.format(full_url_or_path, old),
+                 '--new', '{0}@{1}'.format(full_url_or_path, new),
+                 ],
+                do_combine=True)
+        except svn.exception.SvnException as e:
+            # I think this error only occurs on windows? I'm not actually
+            # seeing this output, but this prevents errors that stops Scommit
+            # from working.
+            return f"New file: {full_url_or_path}\n" + str(e)
         # skip 'Index:' line and '===' line.
         return trim_leading_lines(d, 2)
 
