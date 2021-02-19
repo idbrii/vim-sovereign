@@ -241,6 +241,12 @@ def edit(linenum, line, how):
     vim.command('wincmd p')
     vim.command(how +' '+ filepath)
 
+def _prepare_svn_cmdline(r, cmd):
+    vim.vars['sovereign_scratch'] = cmd
+    os.chdir(r._root_dir)
+    vim.eval('feedkeys(":\<C-r>=g:sovereign_scratch\<CR>\<Home>! svn  \<Left>")')
+    # We have to leave sovereign_scratch dangling because we can't send another command.
+
 def populate_cmdline(linenum, line):
     """Open vim cmdline with svn and current file pre populated.
 
@@ -251,10 +257,7 @@ def populate_cmdline(linenum, line):
     """
     r = repos[vim.current.buffer]
     filepath = _get_abs_filepath_from_line(line, r)
-    vim.vars['sovereign_scratch'] = filepath
-    os.chdir(r._root_dir)
-    vim.eval('feedkeys(":\<C-r>=g:sovereign_scratch\<CR>\<Home>! svn  \<Left>")')
-    # We have to leave sovereign_scratch dangling because we can't send another command.
+    _prepare_svn_cmdline(r, filepath)
 
 def populate_cmdline_range(start, end):
     """Open vim cmdline with svn and current file pre populated.
@@ -278,10 +281,7 @@ def populate_cmdline_range(start, end):
         abs_path = _get_abs_filepath_from_line(line, r)
         files.append(abs_path)
 
-    vim.vars['sovereign_scratch'] = " ".join(files)
-    os.chdir(r._root_dir)
-    vim.eval('feedkeys(":\<C-r>=g:sovereign_scratch\<CR>\<Home>! svn  \<Left>")')
-    # We have to leave sovereign_scratch dangling because we can't send another command.
+    _prepare_svn_cmdline(r, " ".join(files))
 
 def commit(linenum, line, verbose=True):
     # TODO: Would be nice to stay within python, but some of the buf creation
