@@ -219,6 +219,14 @@ def change_item_no_expand(linenum, line, direction):
     w.cursor = (i, c[1])
 
 
+def _get_status_block_end(start):
+    total_lines = len(vim.current.buffer)
+    for linenum in range(start + 1, total_lines):
+        line = vim.current.buffer[linenum]
+        if not line or line.isspace() or is_status_header(line):
+            return linenum - 1
+    raise IndexError(f"Error: Selection didn't get the same start? start={start}")
+
 def _get_abs_filepath_from_line(line, r):
     if not line or line.isspace():
         # these might eval to '.' and cause badness
@@ -325,8 +333,10 @@ def status_stage_unstage(linenum, line):
         # Get everything in block
         try:
             # LIMIT(safety): Limit stage 10 files at a time to avoid runaway failures.
-            for i in range(1, 10):
-                line = vim.current.buffer[linenum + i]
+            start = linenum + 1
+            end = min(start + 10, _get_status_block_end(start))
+            for linenum in range(start, end + 1):
+                line = vim.current.buffer[linenum]
                 abs_path = _get_abs_filepath_from_line(line, r)
                 if not abs_path:
                     break
