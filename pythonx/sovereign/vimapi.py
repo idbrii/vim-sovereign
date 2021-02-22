@@ -278,8 +278,10 @@ def populate_cmdline_range(start, end):
     files = []
     for linenum in range(start, end+1):
         line = b[linenum]
-        if line.isspace() or is_status_header(line):
-            break
+        if not line or line.isspace() or is_status_header(line):
+            # Skip over invalid lines so we can get our entire selection.
+            # Selecting a header does not select everything in that heading.
+            continue
         
         abs_path = _get_abs_filepath_from_line(line, r)
         files.append(abs_path)
