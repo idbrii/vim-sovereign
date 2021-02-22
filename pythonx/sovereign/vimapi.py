@@ -267,6 +267,15 @@ def populate_cmdline(linenum, line):
     populate_cmdline(int, str) -> None
     """
     r = repos[vim.current.buffer]
+    if not line or line.isspace():
+        print("WARN: Invalid line to start cmdline")
+        return
+    if is_status_header(line):
+        start = linenum + 1
+        end = _get_status_block_end(start)
+        populate_cmdline_range(start, end)
+        return
+
     filepath = _get_abs_filepath_from_line(line, r)
     _prepare_svn_cmdline(r, f'"{filepath}"')
 
