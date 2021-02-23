@@ -366,8 +366,10 @@ def status_stage_unstage_range(start, end):
     b = vim.current.buffer
     for linenum in range(start, end+1):
         line = b[linenum]
-        if line.isspace() or is_status_header(line):
-            break
+        if not line or line.isspace() or is_status_header(line):
+            # Skip over non file lines so we can stage our entire selection.
+            # Selecting a header does not stage everything in that heading.
+            continue
         
         abs_path = _get_abs_filepath_from_line(line, r)
         r.request_stage_toggle(abs_path)
