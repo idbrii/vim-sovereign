@@ -9,6 +9,7 @@ import re
 
 try:
     import svn.local
+    import svn.exception
 except ImportError:
     print('pysvn not installed. Please run pip install -r ~/.vim/bundle/sovereign/requirements.txt')
     raise
@@ -334,13 +335,27 @@ class Repo(object):
 
         # Unfortunately, commit doesn't return anything so we need to lookup
         # the revision ourselves.
-        first_rel_path = self._to_svnroot_relative_path(self._staged_files[0])
-        log = self._client.log_default(rel_filepath=first_rel_path, limit=1)
+        #
+        # svn doesn't know how to show log for deleted files without
+        # revision it last existed, so only attempt ones that exist.
+        try:
+            relpath = next(self._to_svnroot_relative_path(filepath) for filepath in self._staged_files if p.exists(filepath))
+        except StopIteration as e:
+            relpath = None
+            pass
         # Clear staging now that they're submitted.
         self._staged_files.clear()
-        for line in log:
-            # Return the first (should be only) result.
-            return True, 'Committed revision {}.'.format(line.revision)
+        if relpath:
+            try:
+                log = self._client.log_default(rel_filepath=relpath, limit=1)
+                for line in log:
+                    # Return the first (should be only) result.
+                    revision = line.revision
+                    return True, 'Committed revision {}.'.format(line.revision)
+            except svn.exception.SvnException as e:
+                # Getting the revision isn't important, so ignore failures.
+                pass
+        return True, 'Committed unknown revision'
 
     def update(self, single_file=None, revision=None):
         """Get latest revision from server
