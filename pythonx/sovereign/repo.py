@@ -313,6 +313,9 @@ class Repo(object):
 
         commit(File) -> None
         """
+        if not self._staged_files:
+            return False, "No files staged to commit"
+
         commit_msg_lines = commit_msg_file.readlines()
 
         error_empty_msg = 'Aborting commit due to empty commit message'
