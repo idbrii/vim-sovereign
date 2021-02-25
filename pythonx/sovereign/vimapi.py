@@ -400,7 +400,7 @@ def setup_buffer_commit(filepath, commit_msg_filepath):
     b[:] = r._commit_text().split('\n')
     # When buffer is closed, it's deleted because we set bufhidden=delete,
     # BufDelete is fired and BufHidden is not.
-    b.options['bufhidden'] = 'delete'
+    b.options['bufhidden'] = 'wipe'
     _autocmd('sovereign', 'BufDelete', '<buffer>', 'on_close_commit_buffer')
     return None
 
@@ -409,6 +409,7 @@ def on_close_commit_buffer(commit_msg_filepath):
 
     on_close_commit_buffer(str) -> None
     """
+    vim.command('au! sovereign * <buffer>')
     r = _get_repo_for_tempfile(commit_msg_filepath)
     try:
         with open(commit_msg_filepath, 'r') as f:
