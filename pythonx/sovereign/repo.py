@@ -181,6 +181,9 @@ class Repo(object):
             if s.type == svn.constants.ST_UNVERSIONED:
                 self._client.add(rel_path)
                 break
+            if s.type == svn.constants.ST_MISSING:
+                self._client.remove(rel_path)
+                break
         if filepath not in self._staged_files:
             self._staged_files.append(filepath)
 
@@ -201,6 +204,17 @@ class Repo(object):
                 # directly, use the absolute path.
                 r = self._client.run_command('revert', [filepath])
                 print(r)
+            # In theory, we could auto revert+delete when unstaging a deleted
+            # file, but it's safer to just remove it from the staged files and
+            # let the user revert.
+            # if s.type == svn.constants.ST_DELETED:
+            #     can_delete = not p.exists(filepath)
+            #     r = self._client.run_command('revert', [filepath])
+            #     if can_delete:
+            #         # Only delete if it didn't exist on disk -- that means svn restored it.
+            #         os.remove(filepath)
+            #     print(r)
+            #     break
 
     def _get_stage_status(self):
         """Get the status repo's staged files.
