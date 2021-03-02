@@ -400,6 +400,8 @@ def setup_buffer_commit(filepath, commit_msg_filepath):
     # We don't delete the buffer (don't know how to do that from BufWinLeave),
     # so just leave it unlisted.
     b.vars['&buflisted'] = 0
+    # Ale causes errors, so ignore them.
+    b.vars['ale_enabled'] = 0
     # Save empty file to ensure no changes results in failure to commit.
     b[:] = []
     vim.command('update')
