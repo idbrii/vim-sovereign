@@ -334,7 +334,10 @@ class Repo(object):
             return False, error_empty_msg
 
         message = "".join(commit_msg_lines)
-        self._client.commit(message, self._staged_files)
+        try:
+            self._client.commit(message, self._staged_files)
+        except svn.exception.SvnException as e: 
+            return False, str(e)
 
         # Unfortunately, commit doesn't return anything so we need to lookup
         # the revision ourselves.

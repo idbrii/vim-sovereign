@@ -1,5 +1,11 @@
 pyx import sovereign.vimapi as sovereignapi
 
+" Reuse the same commit message path so we don't pollute the user's buffer
+" list. (We're not deleting the buffer when we're done with it because we
+" can't delete from BufWinLeave.)
+" This also allows you to undo to see your previous commit message.
+let s:commit_msg_filepath = tempname() . '_commit'
+
 if has('win32')
     " python interprets "\U" in "C:\Users" as a unicode escape sequence and
     " barfs on the function call (not even inside the function), so it can't
@@ -119,7 +125,7 @@ endfunction
 function! sovereign#commit(...) abort
     let path = s:get_safe_path_from_args(a:000)
 
-    let f = s:to_python_safe_path(tempname() . '_commit')
+    let f = s:to_python_safe_path(s:commit_msg_filepath)
     call execute('split '. f)
     wincmd _
     " We copy git formatting, so use their syntax.

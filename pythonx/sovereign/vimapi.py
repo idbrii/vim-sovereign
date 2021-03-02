@@ -397,11 +397,14 @@ def setup_buffer_commit(filepath, commit_msg_filepath):
     r = _get_repo(filepath, vim.current.buffer)
     _set_repo_for_tempfile(commit_msg_filepath, r)
     b = vim.current.buffer
+    # We don't delete the buffer (don't know how to do that from BufWinLeave),
+    # so just leave it unlisted.
+    b.vars['&buflisted'] = 0
+    # Save empty file to ensure no changes results in failure to commit.
+    b[:] = []
+    vim.command('update')
     b[:] = r._commit_text().split('\n')
-    # When buffer is closed, it's deleted because we set bufhidden=delete,
-    # BufDelete is fired and BufHidden is not.
-    b.options['bufhidden'] = 'wipe'
-    _autocmd('sovereign', 'BufDelete', '<buffer>', 'on_close_commit_buffer')
+    _autocmd('sovereign', 'BufWinLeave', '<buffer>', 'on_close_commit_buffer')
     return None
 
 def on_close_commit_buffer(commit_msg_filepath):
@@ -414,7 +417,20 @@ def on_close_commit_buffer(commit_msg_filepath):
     try:
         with open(commit_msg_filepath, 'r') as f:
             success, msg = r.commit(f)
-            print(msg)
+            if success:
+                print(msg)
+            else:
+                err_list = msg.split('\n')
+                if len(err_list) == 1:
+                    print(err_list[0])
+                else:
+                    _create_scratch_buffer(
+                        err_list + ['', '', '', "Commit message file:", '   '+ commit_msg_filepath],
+                        None,
+                        commit_msg_filepath,
+                        should_stay_open=True)
+                    vim.command('resize 15')
+                    vim.command('file commit-error')
     except FileNotFoundError:
         print('Aborting commit due to empty commit message.')
 
