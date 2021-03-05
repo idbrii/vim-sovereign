@@ -22,7 +22,7 @@ endif
 
 " Our vimapi requires absolute paths and Python requires them in unix format.
 function! s:to_python_safe_path(path)
-    return resolve(fnamemodify(s:to_unix_path_sep(a:path), ':p'))
+    return s:to_unix_path_sep(resolve(fnamemodify(a:path, ':p')))
 endf
 
 " No args means default -- current buffer.
@@ -102,8 +102,8 @@ function! sovereign#branch_name() abort
     return s:sovereign_branch_cached
 endfunction
 
-function! sovereign#status() abort
-    let path = s:to_python_safe_path('%')
+function! sovereign#status(...) abort
+    let path = s:get_safe_path_from_args(a:000)
     call s:create_scratch('split', 'sovereign-status')
     let cmd = printf('sovereignapi.setup_buffer_status(r"%s")', path)
     if !s:pyeval(cmd)
