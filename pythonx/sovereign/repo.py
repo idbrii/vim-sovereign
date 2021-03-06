@@ -416,6 +416,9 @@ class Repo(object):
         if len(processed) < 2:
             # No match means it's not crlf. Assume local os line endings.
             processed = f.split(os.linesep)
+        if len(processed) < 2:
+            # No match means we're on Windows, but it's not crlf. Assume unix line endings.
+            processed = f.split('\n')
         f = processed
         # svn emits a trailing \r. When line endings are \r\n, it sometimes
         # results in an empty line at the end and sometimes is cleaned up by
