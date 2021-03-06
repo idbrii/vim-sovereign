@@ -4,6 +4,7 @@ pyx import sovereign.vimapi as sovereignapi
 " list. (We're not deleting the buffer when we're done with it because we
 " can't delete from BufWinLeave.)
 " This also allows you to undo to see your previous commit message.
+" TODO: Use .svn/COMMIT_MSG
 let s:commit_msg_filepath = tempname() . '_commit'
 
 if has('win32')
