@@ -147,8 +147,12 @@ function! sovereign#diff(...) abort
         bdelete
         return
     endif
-    " TODO: depends on diffusable
-    DiffBoth
+    if exists(':DiffBoth') == 2
+        " Automatically clear diff when one buffer is closed with vim-diffusable.
+        DiffBoth
+    else
+        diffboth
+    endif
 endfunction
 
 function! sovereign#log(limit, showdiff, prefix, ...) abort
