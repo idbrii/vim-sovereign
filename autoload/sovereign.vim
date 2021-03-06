@@ -126,11 +126,7 @@ function! sovereign#commit(...) abort
     let path = s:get_safe_path_from_args(a:000)
 
     let f = s:to_python_safe_path(s:commit_msg_filepath)
-    call execute('split '. f)
-    wincmd _
-    " We copy git formatting, so use their syntax.
-    setfiletype gitcommit
-    let cmd = printf('sovereignapi.setup_buffer_commit(r"%s", r"%s")', path, f)
+    let cmd = printf('sovereignapi.create_buffer_commit(r"%s", r"%s")', path, f)
     if !s:pyeval(cmd)
         return
     endif

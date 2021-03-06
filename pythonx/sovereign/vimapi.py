@@ -393,8 +393,21 @@ def stage_file(filepath):
 # Scommit {{{1
 
 @vim_error_on_fail
-def setup_buffer_commit(filepath, commit_msg_filepath):
+def create_buffer_commit(filepath, commit_msg_filepath):
+    if not commit_msg_filepath:
+        print('ERROR: Failed to get valid commit scratch file')
+        return None
+
     r = _get_repo(filepath, vim.current.buffer)
+    if not r._staged_files:
+        print('No files staged to commit')
+        return None
+
+    vim.command('split '+ commit_msg_filepath)
+    vim.command('wincmd _')
+    # We copy git formatting, so use their syntax.
+    vim.command("setfiletype gitcommit")
+
     _set_repo_for_tempfile(commit_msg_filepath, r)
     b = vim.current.buffer
     # We don't delete the buffer (don't know how to do that from BufWinLeave),
