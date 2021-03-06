@@ -9,6 +9,9 @@ command! -nargs=* -complete=file Sstatus call sovereign#status(<q-args>)
 command! -nargs=* Sadd call sovereign#stage(<f-args>)
 command! Scommit call sovereign#commit()
 command! -nargs=* Sdiff call sovereign#diff(<f-args>)
+
 " Hide diff if bang is included.
-command! -nargs=* -count=10 -bang Slog call sovereign#log(<count>, <bang>1, <f-args>)
+command! -nargs=* -count=10 -bang Sclog call sovereign#log(<count>, <bang>1, 'c', <f-args>)
+command! -nargs=* -count=10 -bang Sllog call sovereign#log(<count>, <bang>1, 'l', <f-args>)
+
 command! Sedit call sovereign#edit()

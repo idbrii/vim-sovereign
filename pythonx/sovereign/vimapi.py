@@ -470,9 +470,9 @@ def setup_buffer_cat(filepath, revision):
 # Slog {{{1
 
 @vim_error_on_fail
-def setup_buffer_log(filepath, limit, showdiff, args_var):
+def setup_buffer_log(filepath, limit, showdiff, dest_prefix, args_var):
     """
-    setup_buffer_log(string, int, int) -> None
+    setup_buffer_log(string, int, int, string, string) -> None
     """
     r = _get_repo(filepath, vim.current.buffer)
     log_args = [s.decode('utf-8') for s in vim.vars[args_var]]
@@ -508,10 +508,14 @@ def setup_buffer_log(filepath, limit, showdiff, args_var):
     # 'vcol': 0
     # },
 
+    if dest_prefix == 'c':
+        dest_fn = 'setqflist('
+    else:
+        dest_fn = 'setloclist(0,'
     vim.vars['sovereign_qf_scratch'] = vim.Dictionary(qf_what)
-    vim.eval('setqflist([], " ", g:sovereign_qf_scratch)')
-    vim.command('unlet g:sovereign_qf_scratch')
-    vim.command('copen')
+    vim.eval(f'{dest_fn}[], " ", g:sovereign_qf_scratch)')
+    # vim.command('unlet g:sovereign_qf_scratch')
+    vim.command(f'{dest_prefix}open')
 
 # Sedit {{{1
 
