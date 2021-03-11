@@ -309,8 +309,8 @@ def commit(linenum, line, verbose=True):
     # TODO: Would be nice to stay within python, but some of the buf creation
     # stuff is in vim (and maybe it's easier in vim so maybe there's no point).
     cmd = 'Scommit '
-    if verbose:
-        cmd += '-v'
+    # if verbose:
+    #     cmd += '-v'
     vim.command(cmd)
 
 def diff_item(linenum, line, manage_win):
