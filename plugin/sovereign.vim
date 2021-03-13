@@ -5,13 +5,13 @@ let loaded_sovereign = 1
 
 
 " Sstatus always show *repo* status. Pass a path to change the targetted repo.
-command! -nargs=* -complete=file Sstatus call sovereign#status(<q-args>)
-command! -nargs=* Sadd call sovereign#stage(<f-args>)
-command! Scommit call sovereign#commit()
-command! -nargs=* Sdiff call sovereign#diff(<f-args>)
+command! -bar -nargs=* -complete=file Sstatus call sovereign#status(<q-args>)
+command! -bar -nargs=* Sadd call sovereign#stage(<f-args>)
+command! -bar Scommit call sovereign#commit()
+command! -bar -nargs=* Sdiff call sovereign#diff(<f-args>)
 
 " Hide diff if bang is included.
-command! -nargs=* -count=10 -bang Sclog call sovereign#log(<count>, <bang>1, 'c', <f-args>)
-command! -nargs=* -count=10 -bang Sllog call sovereign#log(<count>, <bang>1, 'l', <f-args>)
+command! -bar -nargs=* -count=10 -bang Sclog call sovereign#log(<count>, <bang>1, 'c', <f-args>)
+command! -bar -nargs=* -count=10 -bang Sllog call sovereign#log(<count>, <bang>1, 'l', <f-args>)
 
-command! Sedit call sovereign#edit()
+command! -bar Sedit call sovereign#edit()
