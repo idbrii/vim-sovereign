@@ -154,6 +154,8 @@ function! sovereign#diff(...) abort
     else
         diffboth
     endif
+    " Jump to top to get better overview diff and apply scrollbind.
+    norm! ggzt
 endfunction
 
 function! sovereign#log(limit, showdiff, prefix, ...) abort
