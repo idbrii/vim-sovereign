@@ -314,6 +314,9 @@ def commit(linenum, line, verbose=True):
     vim.command(cmd)
 
 def diff_item(linenum, line, manage_win):
+    status_b = vim.current.buffer
+    status_b.vars['sovereign_block_refresh'] = True
+
     num_win = int(vim.eval('winnr("$")'))
     if num_win > 2:
         # If we had a previous diff, we need to close it. If we had some other
@@ -328,6 +331,10 @@ def diff_item(linenum, line, manage_win):
     edit(linenum, line, 'silent botright edit')
     # vim.command('resize') # full height
     vim.command('Sdiff')
+
+    winnr = vim.eval(f'bufwinnr({status_b.number})')
+    vim.command(winnr +'wincmd w')
+    status_b.vars['sovereign_block_refresh'] = False
 
 def is_status_header(line):
     return line[1] != ' '
@@ -379,7 +386,9 @@ def status_stage_unstage_range(start, end):
 
 def status_refresh(*_):
     r = repos[vim.current.buffer]
-    _set_buffer_text_status(vim.current.buffer, r)
+    b = vim.current.buffer
+    if not b.vars['sovereign_block_refresh']:
+        _set_buffer_text_status(b, r)
 
 
 # Sadd {{{1
