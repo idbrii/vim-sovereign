@@ -185,7 +185,7 @@ class Repo(object):
                 self._client.remove(rel_path)
                 break
         if filepath not in self._staged_files:
-            self._staged_files.append(filepath)
+            self._staged_files.append(p.normpath(filepath))
 
     def request_unstage(self, filepath):
         """Remove the input file from staging.
@@ -195,7 +195,7 @@ class Repo(object):
         request_unstage(str) -> None
         """
         assert p.isabs(filepath)
-        self._staged_files.remove(filepath)
+        self._staged_files.remove(p.normpath(filepath))
         rel_path = self._to_svnroot_relative_path(filepath)
         file_status = self._client.status(rel_path)
         for s in file_status:
@@ -216,6 +216,16 @@ class Repo(object):
             #     print(r)
             #     break
 
+    def is_staged(self, filepath):
+        """Check if a file is staged to be committed.
+
+        is_staged(str) -> boolean
+        """
+        assert p.isabs(filepath)
+        # Normalize to ensure irrelevant differences in filepaths
+        # don't cause false negatives.
+        return p.normpath(filepath) in self._staged_files
+
     def _get_stage_status(self):
         """Get the status repo's staged files.
     
@@ -227,8 +237,7 @@ class Repo(object):
         untracked = []
         root_len = len(self._root_dir) + 1
         for status in self._client.status():
-            # status contains absolute paths
-            if status.name in self._staged_files:
+            if self.is_staged(status.name):
                 staged.append(status)
             elif status.type == svn.constants.ST_NORMAL or status.changelist == 'ignore-on-commit':
                 # Ignore normal files. They should only show up from changelists.
