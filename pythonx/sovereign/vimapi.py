@@ -448,12 +448,13 @@ def on_close_commit_buffer(commit_msg_filepath):
                 if len(err_list) == 1:
                     print(err_list[0])
                 else:
+                    vim.command('tabnew')
                     _create_scratch_buffer(
                         err_list + ['', '', '', "Commit message file:", '   '+ commit_msg_filepath],
                         None,
                         commit_msg_filepath,
                         should_stay_open=True)
-                    vim.command('resize 15')
+                    vim.command('setlocal bufhidden=wipe')
                     vim.command('file commit-error')
     except FileNotFoundError:
         print('Aborting commit due to empty commit message.')
