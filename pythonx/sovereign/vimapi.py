@@ -387,7 +387,7 @@ def status_stage_unstage_range(start, end):
 def status_refresh(*_):
     r = repos[vim.current.buffer]
     b = vim.current.buffer
-    if not b.vars['sovereign_block_refresh']:
+    if not b.vars.get('sovereign_block_refresh', False):
         _set_buffer_text_status(b, r)
 
 
