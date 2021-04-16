@@ -4,6 +4,7 @@ import collections
 import functools
 import os
 import os.path as p
+import traceback
 
 import vim
 import sovereign.repo as repo
@@ -17,6 +18,7 @@ def capture_exception(ex):
     ex_name = type(ex).__name__
     ex_msg = str(ex)
     vim.vars['sovereign_exception'] = "%s: %s" % (ex_name, ex_msg)
+    vim.vars['sovereign_callstack'] = traceback.format_exc().split('\n')
 
 
 def vim_error_on_fail(func):
@@ -27,7 +29,7 @@ def vim_error_on_fail(func):
         except Exception as ex:
             capture_exception(ex)
             # Fire error so we can catch failure in vimscript.
-            vim.command(f'echoerr g:sovereign_exception')
+            vim.command('echoerr g:sovereign_exception')
             return None
     return wrapper
 

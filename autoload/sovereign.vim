@@ -54,6 +54,17 @@ function! s:pyeval(cmd)
         let error = get(g:, 'sovereign_exception', v:exception)
         echohl WarningMsg | echomsg error | echohl None
         silent! unlet g:sovereign_exception
+        let error = get(g:, 'sovereign_callstack', '')
+        if !empty(error)
+            new
+            setlocal buftype=nofile bufhidden=hide noswapfile
+            call append(0, error)
+            setfiletype python
+            cgetbuffer
+            close
+        endif
+        silent! unlet g:sovereign_callstack
+
         return v:false
     endtry
 endf
