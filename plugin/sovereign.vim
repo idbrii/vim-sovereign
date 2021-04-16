@@ -14,4 +14,6 @@ command! -bar -nargs=* Sdiff call sovereign#diff(<f-args>)
 command! -bar -nargs=* -count=10 -bang Sclog call sovereign#log(<count>, <bang>1, 'c', <f-args>)
 command! -bar -nargs=* -count=10 -bang Sllog call sovereign#log(<count>, <bang>1, 'l', <f-args>)
 
-command! -bar Sedit call sovereign#edit()
+" No Args: go back to normal file (if known)
+" With Args: pass a revision and we'll show its details
+command! -bar -nargs=? Sedit call sovereign#edit(<q-args>)

@@ -168,8 +168,18 @@ function! sovereign#log(limit, showdiff, prefix, ...) abort
     unlet g:sovereign_scratch
 endfunction
 
-function! sovereign#edit() abort
-    if !s:pyeval('sovereignapi.jump_to_originator()')
-        return
+function! sovereign#edit(...) abort
+    if !empty(a:000) && !empty(a:000[0])
+        " Pass revision to get output like git show or `:Gedit sha`
+        let revision = a:000[0]
+        let filepath = s:get_safe_path_from_args([])
+        if !s:pyeval(printf('sovereignapi.setup_show_revision("%s", %s)', filepath, revision))
+            return
+        endif
+    else
+        " Pass nothing to try to return to originator (after Sedit or Sclog).
+        if !s:pyeval('sovereignapi.jump_to_originator()')
+            return
+        endif
     endif
 endfunction

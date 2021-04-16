@@ -537,4 +537,28 @@ def jump_to_originator():
     except KeyError as e:
         pass
 
+@vim_error_on_fail
+def setup_show_revision(filepath, revision):
+    """
+    setup_show_revision(str, str) -> None
+    """
+    b = vim.current.buffer
+    r = _get_repo(filepath, b)
+    items = r.get_log_text(filepath, limit=1, include_diff=True, revision_from=revision, revision_to=revision)
+    if items:
+        contents = items[0]['filecontents'].split('\n')
+    else:
+        # Either invalid revision or it doesn't exist in our branch.
+        #
+        # Need to create an LocalClient from the url instead of local path to
+        # see changes from other branches. That's a bunch of work that doesn't
+        # currently seem worthwhile right now.
+        # url = r._client.info()['repository/root']
+        contents = [f'Failed to find revision r{revision}']
+    
+    bufnr = _create_scratch_buffer(contents, 'diff', filepath, should_stay_open=False)
+    # We close and then open it so it replaces the current buffer and we can
+    # see more of it.
+    vim.command(f'buffer {bufnr}')
+
 # }}}
