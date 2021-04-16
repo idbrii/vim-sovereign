@@ -27,19 +27,26 @@ def get_repo(working_copy_file):
         _root_to_repo[root] = r
         return r
 
+def _sanitize_msg(txt):
+    # If no message was provided, we'll get None.
+    return txt or ''
+
 def trim_leading_lines(txt, num_newlines):
     assert num_newlines > 0
+    txt = _sanitize_msg(txt)
     index = 0
     for i in range(num_newlines):
         index = txt.find('\n', index + 1)
     return txt[index + 1:]
 
 def _take_first_x_lines(txt, num_newlines):
+    txt = _sanitize_msg(txt)
     assert num_newlines > 0
     lines = txt.split('\n')
     return "\n".join(lines[:num_newlines])
 
 def _prefix_lines(txt, prefix):
+    txt = _sanitize_msg(txt)
     lines = txt.split('\n')
     lines = [prefix + line for line in lines]
     return "\n".join(lines)

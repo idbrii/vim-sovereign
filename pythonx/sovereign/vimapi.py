@@ -479,7 +479,7 @@ def setup_buffer_cat(filepath, revision):
     return None
 
 
-# Slog {{{1
+# Sclog {{{1
 
 @vim_error_on_fail
 def setup_buffer_log(filepath, limit, showdiff, dest_prefix, args_var):
