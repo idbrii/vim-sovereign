@@ -319,10 +319,13 @@ class Repo(object):
 {diff}'''
         return txt
 
-    def _unified_diff(self, full_url_or_path, old, new):
+    def _unified_diff(self, full_url_or_path, old, new, text_only=True):
         # self._client.diff() doesn't work since it tries to give us the diff
         # in a list and I don't want to put it back together again.
         try:
+            if text_only and self._is_binary(full_url_or_path):
+                # Diffs for binary files might be huge and very slow.
+                return f"Binary file differs: {full_url_or_path}"
             d = self._client.run_command(
                 'diff',
                 ['--git',
@@ -337,6 +340,18 @@ class Repo(object):
             return f"New file: {full_url_or_path}\n" + str(e)
         # skip 'Index:' line and '===' line.
         return trim_leading_lines(d, 2)
+
+
+    def _is_binary(self, filepath):
+        """Return whether svn considers the input file binary.
+
+        _is_binary(str) -> bool
+        """
+        rel_path = self._to_svnroot_relative_path(filepath)
+        props = self._client.properties(rel_path)
+        mime_type = props.get('svn:mime-type', '')
+        return mime_type == 'application/octet-stream'
+
 
     def commit(self, commit_msg_file):
         """Commit current changes using message from input file-object
