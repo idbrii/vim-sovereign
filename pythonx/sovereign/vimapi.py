@@ -320,9 +320,10 @@ def diff_item(linenum, line, manage_win):
     status_b.vars['sovereign_block_refresh'] = True
 
     num_win = int(vim.eval('winnr("$")'))
-    if num_win > 2:
+    if num_win != 2:
         # If we had a previous diff, we need to close it. If we had some other
-        # windows, there's not enough space to diff.
+        # windows, there's not enough space to diff. If we're the only window,
+        # we need a split.
         # TODO: Better to re-use existing layout? Or open a tab?
         # Fugitive seems to go back to the previous window, load the file,
         # split, diff.
@@ -337,6 +338,9 @@ def diff_item(linenum, line, manage_win):
     winnr = vim.eval(f'bufwinnr({status_b.number})')
     vim.command(winnr +'wincmd w')
     status_b.vars['sovereign_block_refresh'] = False
+    # shrink to show more diff
+    height = vim.options['lines'] * 0.2
+    vim.command(f'resize {height:.0f}')
 
 def is_status_header(line):
     return line[1] != ' '
