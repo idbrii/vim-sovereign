@@ -319,6 +319,11 @@ def diff_item(linenum, line, manage_win):
     status_b = vim.current.buffer
     status_b.vars['sovereign_block_refresh'] = True
 
+    # preserve height, but limit to show more diff
+    win_height = int(vim.eval(f'winheight(".")'))
+    desired_height = vim.options['lines'] * 0.2
+    win_height = min(win_height, desired_height)
+
     num_win = int(vim.eval('winnr("$")'))
     if num_win != 2:
         # If we had a previous diff, we need to close it. If we had some other
@@ -338,9 +343,9 @@ def diff_item(linenum, line, manage_win):
     winnr = vim.eval(f'bufwinnr({status_b.number})')
     vim.command(winnr +'wincmd w')
     status_b.vars['sovereign_block_refresh'] = False
-    # shrink to show more diff
-    height = vim.options['lines'] * 0.2
-    vim.command(f'resize {height:.0f}')
+
+    vim.command(f'resize {win_height:.0f}')
+
 
 def is_status_header(line):
     return line[1] != ' '
