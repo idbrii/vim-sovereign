@@ -4,6 +4,7 @@ import collections
 import functools
 import os
 import os.path as p
+import re
 import traceback
 
 import vim
@@ -239,7 +240,10 @@ def _get_abs_filepath_from_line(line, r):
     if p.isabs(abs_path):
         return abs_path
     return None
-    
+
+def _escape_filename(filepath):
+    # Vim expands # and %
+    return re.sub("([#%])", r"\\\1", filepath)
 
 def edit(linenum, line, how):
     """Edit the file in the previous window.
@@ -249,7 +253,7 @@ def edit(linenum, line, how):
     r = repos[vim.current.buffer]
     filepath = _get_abs_filepath_from_line(line, r)
     vim.command('wincmd p')
-    vim.command(how +' '+ filepath)
+    vim.command(how +' '+ _escape_filename(filepath))
 
 def _prepare_svn_cmdline(r, cmd):
     vim.vars['sovereign_scratch'] = cmd
@@ -544,8 +548,9 @@ def setup_buffer_log(filepath, limit, showdiff, dest_prefix, args_var):
 def jump_to_originator():
     try:
         originator = vim.current.buffer.vars['sovereign_originator'].decode('utf-8')
-        vim.command('edit '+ originator)
-    except KeyError as e:
+        vim.command('edit '+ _escape_filename(originator))
+    except KeyError:
+        # do nothing if we don't have an originator
         pass
 
 @vim_error_on_fail
