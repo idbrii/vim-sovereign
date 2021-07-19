@@ -1,6 +1,5 @@
 #! /usr/bin/env python3
 
-import collections
 import functools
 import os
 import os.path as p
@@ -46,7 +45,7 @@ def dbg_repo():
 def clamp(minimum, x, maximum):
     return max(minimum, min(x, maximum))
 
-repos = {}
+repos = {} # type: dict[str, repo.Repo]
 def _get_repo(filepath, buffer):
     try:
         return repos[buffer]
@@ -55,7 +54,7 @@ def _get_repo(filepath, buffer):
         repos[buffer] = r
         return r
 
-tempfile_to_repo = {}
+tempfile_to_repo = {} # type: dict[str, repo.Repo]
 def _get_repo_for_tempfile(temp_filepath):
     # Use realpath to ensure this key will match the input one.
     temp_filepath = p.realpath(temp_filepath)
@@ -73,7 +72,7 @@ def _extra_quote_strings(t):
         return f"""'{t}'"""
     else:
         return str(t)
-    
+
 def _func_args(args, kwargs):
     out = ''
     if args:
@@ -141,7 +140,7 @@ def setup_buffer_status(filepath):
     if not r:
         vim.eval(f'echo "{filepath}" is not in svn')
         return None
-    
+
     b = vim.current.buffer
     _set_buffer_text_status(b, r)
 
@@ -258,7 +257,7 @@ def edit(linenum, line, how):
 def _prepare_svn_cmdline(r, cmd):
     vim.vars['sovereign_scratch'] = cmd
     os.chdir(r._root_dir)
-    vim.eval('feedkeys(":\<C-r>=g:sovereign_scratch\<CR>\<Home>! svn  \<Left>")')
+    vim.eval(r'feedkeys(":\<C-r>=g:sovereign_scratch\<CR>\<Home>! svn  \<Left>")')
     # We have to leave sovereign_scratch dangling because we can't send another command.
 
 def _quote(strs):
@@ -305,7 +304,7 @@ def populate_cmdline_range(start, end):
             # Skip over invalid lines so we can get our entire selection.
             # Selecting a header does not select everything in that heading.
             continue
-        
+
         abs_path = _get_abs_filepath_from_line(line, r)
         files.append(abs_path)
 
@@ -324,7 +323,7 @@ def diff_item(linenum, line, manage_win):
     status_b.vars['sovereign_block_refresh'] = True
 
     # preserve height, but limit to show more diff
-    win_height = int(vim.eval(f'winheight(".")'))
+    win_height = int(vim.eval('winheight(".")'))
     desired_height = vim.options['lines'] * 0.2
     win_height = min(win_height, desired_height)
 
@@ -339,7 +338,7 @@ def diff_item(linenum, line, manage_win):
         vim.command('only')
         # Destination for diff
         vim.command('split')
-    
+
     edit(linenum, line, 'silent botright edit')
     # vim.command('resize') # full height
     vim.command('Sdiff')
@@ -359,7 +358,7 @@ def status_stage_unstage(linenum, line):
     is_valid = line and not line.isspace()
     if not is_valid:
         return
-    
+
     if is_status_header(line):
         # Get everything in block
         try:
@@ -392,7 +391,7 @@ def status_stage_unstage_range(start, end):
             # Skip over non file lines so we can stage our entire selection.
             # Selecting a header does not stage everything in that heading.
             continue
-        
+
         abs_path = _get_abs_filepath_from_line(line, r)
         r.request_stage_toggle(abs_path)
 
@@ -503,7 +502,6 @@ def setup_buffer_log(filepath, limit, showdiff, dest_prefix, args_var):
     log_args = [s.decode('utf-8') for s in vim.vars[args_var]]
     log_args = " ".join(log_args)
     qf_items = r.get_log_text(filepath, limit=limit, include_diff=showdiff, query=log_args)
-    items = []
 
     old_lazyredraw = vim.options['lazyredraw']
     for commit in qf_items:
@@ -571,7 +569,7 @@ def setup_show_revision(filepath, revision):
         # currently seem worthwhile right now.
         # url = r._client.info()['repository/root']
         contents = [f'Failed to find revision r{revision}']
-    
+
     bufnr = _create_scratch_buffer(contents, 'diff', filepath, should_stay_open=False)
     # We close and then open it so it replaces the current buffer and we can
     # see more of it.

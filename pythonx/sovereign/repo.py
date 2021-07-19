@@ -16,7 +16,7 @@ except ImportError:
 
 _SNIP_MARKER = "------------------------ >8 ------------------------"
 
-_root_to_repo = {}
+_root_to_repo = {} # type: dict[str, Repo]
 
 def get_repo(working_copy_file):
     root = _find_svnroot_for_file(p.expanduser(working_copy_file))
@@ -59,7 +59,7 @@ class SvnError(Exception):
 
     def __init__(self, msg):
         Exception.__init__(self, msg)
-        
+
 
 class Repo(object):
     """Docstring for Repo. """
@@ -100,7 +100,7 @@ class Repo(object):
     def _to_svnroot_relative_path(self, filepath):
         """Convert to relative paths. For display purposes only. We should
         store paths as absolute.
-    
+
         _to_svnroot_relative_path(str) -> str
         """
         f = p.realpath(p.abspath(p.expanduser(filepath)))
@@ -133,14 +133,14 @@ class Repo(object):
         # TODO: Support status for a directory since svn can be slow retrieving results from server.
 
         # Head: master
-        # 
+        #
         # Untracked (2)
         # ? autoload/
         # ? plugin/
-        # 
+        #
         # Unstaged (1)
         # M pythonx/sovereign.py
-        # 
+        #
         # Staged (1)
         # A pythonx/sovereign.py
         #
@@ -160,7 +160,7 @@ class Repo(object):
             '\nChangelist[{title}] ({count})',
         ]
         staged, unstaged, listed, untracked = self._get_stage_status_text(fmt, headers)
-        return f"""Head: {self.get_branch()} 
+        return f"""Head: {self.get_branch()}
 {untracked}{unstaged}{staged}
 {listed}
 """
@@ -178,7 +178,7 @@ class Repo(object):
 
     def request_stage(self, filepath):
         """Stage the input file.
-    
+
         request_stage(str) -> None
         """
         assert p.isabs(filepath)
@@ -198,7 +198,7 @@ class Repo(object):
         """Remove the input file from staging.
 
         Throws ValueError if value wasn't staged.
-    
+
         request_unstage(str) -> None
         """
         assert p.isabs(filepath)
@@ -235,14 +235,13 @@ class Repo(object):
 
     def _get_stage_status(self):
         """Get the status repo's staged files.
-    
+
         _get_stage_status() -> list(str), list(str), list(str)
         """
         staged    = []
         unstaged  = []
         listed    = []
         untracked = []
-        root_len = len(self._root_dir) + 1
         for status in self._client.status():
             if self.is_staged(status.name):
                 staged.append(status)
@@ -263,7 +262,7 @@ class Repo(object):
 
     def _get_stage_status_text(self, fmt, headers):
         """Get the status repo's staged files.
-    
+
         _get_stage_status_text() -> str, str, str
         """
 
@@ -381,7 +380,7 @@ class Repo(object):
         message = "".join(commit_msg_lines)
         try:
             self._client.commit(message, self._staged_files)
-        except svn.exception.SvnException as e: 
+        except svn.exception.SvnException as e:
             return False, str(e)
 
         # Unfortunately, commit doesn't return anything so we need to lookup
@@ -391,7 +390,7 @@ class Repo(object):
         # revision it last existed, so only attempt ones that exist.
         try:
             relpath = next(self._to_svnroot_relative_path(filepath) for filepath in self._staged_files if p.exists(filepath))
-        except StopIteration as e:
+        except StopIteration:
             relpath = None
             pass
         # Clear staging now that they're submitted.
@@ -401,16 +400,15 @@ class Repo(object):
                 log = self._client.log_default(rel_filepath=relpath, limit=1)
                 for line in log:
                     # Return the first (should be only) result.
-                    revision = line.revision
                     return True, 'Committed revision {}.'.format(line.revision)
-            except svn.exception.SvnException as e:
+            except svn.exception.SvnException:
                 # Getting the revision isn't important, so ignore failures.
                 pass
         return True, 'Committed unknown revision'
 
     def update(self, single_file=None, revision=None):
         """Get latest revision from server
-    
+
         update() -> None
         """
         if not single_file:
@@ -461,7 +459,7 @@ class Repo(object):
 
     def get_log_text(self, filepath, limit=10, include_diff=True, revision_from=None, revision_to=None, query=None):
         """Get log buffer text for log
-    
+
         log(str, int) -> str
         """
         assert p.isabs(filepath)
@@ -485,7 +483,7 @@ class Repo(object):
         else:
             def get_diff(entry):
                 return ''
-        
+
 
         qf_items = [{
             'filecontents': '''r{revision}
@@ -591,20 +589,20 @@ def test():
             r.request_stage(subdir)
             for fpath in files:
                 with open(fpath, 'w', encoding='utf8') as f:
-                    f.write("hello\n") 
+                    f.write("hello\n")
                 r.request_stage(fpath)
             r.commit(io.StringIO("setup repo\n\nlonger message goes here\n"))
             print('Created test svn repo.')
         else:
             print('Error: test svn repo not correctly setup. please enable allow_commit')
         return
-    
+
 
     for fname in [modified_by_test, file_for_cl1, file_for_cl2]:
         with open(fname, 'w', encoding='utf8') as f:
-            f.write("modifying this file\n") 
-            f.write(str(datetime.datetime.now())) 
-            f.write("\n") 
+            f.write("modifying this file\n")
+            f.write(str(datetime.datetime.now()))
+            f.write("\n")
 
     r._client.run_command('changelist', ['my-cl', file_for_cl1])
     r._client.run_command('changelist', ['another-cl', file_for_cl2])
