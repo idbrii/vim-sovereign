@@ -109,7 +109,7 @@ def _autocmd(group, event, pattern, funcname, args=None):
     vim.command(r'augroup END')
 
 def _create_scratch_buffer(contents, filetype, originating_filepath, should_stay_open):
-    vim.command('new')
+    vim.command('keepalt new')
     vim.command('setlocal buftype=nofile bufhidden=hide noswapfile buflisted')
     if filetype:
         vim.command('setfiletype '+ filetype)
@@ -252,7 +252,7 @@ def edit(linenum, line, how):
     r = repos[vim.current.buffer]
     filepath = _get_abs_filepath_from_line(line, r)
     vim.command('wincmd p')
-    vim.command(how +' '+ _escape_filename(filepath))
+    vim.command('keepalt ' + how +' '+ _escape_filename(filepath))
 
 def _prepare_svn_cmdline(r, cmd):
     vim.vars['sovereign_scratch'] = cmd
@@ -546,6 +546,7 @@ def setup_buffer_log(filepath, limit, showdiff, dest_prefix, args_var):
 def jump_to_originator():
     try:
         originator = vim.current.buffer.vars['sovereign_originator'].decode('utf-8')
+        # In this rare case, we want alternate-file to go back to the sovereign buffer.
         vim.command('edit '+ _escape_filename(originator))
     except KeyError:
         # do nothing if we don't have an originator
