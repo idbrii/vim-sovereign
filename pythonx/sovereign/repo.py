@@ -455,6 +455,8 @@ class Repo(object):
         # way, try to clean the extra line.
         if f[-1].isspace() or len(f[-1]) == 0:
             f = f[:-1]
+        # Prevent "vim.error: string cannot contain newlines"
+        f = [line.replace("\n", "\\n") for line in f]
         return f
 
     def get_log_text(self, filepath, limit=10, include_diff=True, revision_from=None, revision_to=None, query=None):
