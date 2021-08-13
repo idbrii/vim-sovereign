@@ -426,7 +426,7 @@ def create_buffer_commit(filepath, commit_msg_filepath):
         print('No files staged to commit')
         return None
 
-    vim.command('split '+ commit_msg_filepath)
+    vim.command('keepalt split '+ commit_msg_filepath)
     vim.command('wincmd _')
     # We copy git formatting, so use their syntax.
     vim.command("setfiletype gitcommit")
