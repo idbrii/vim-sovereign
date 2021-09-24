@@ -191,8 +191,9 @@ class Repo(object):
             if s.type == svn.constants.ST_MISSING:
                 self._client.remove(rel_path)
                 break
-        if filepath not in self._staged_files:
-            self._staged_files.append(p.normpath(filepath))
+        norm_filepath = p.normpath(filepath)
+        if norm_filepath not in self._staged_files:
+            self._staged_files.append(norm_filepath)
 
     def request_unstage(self, filepath):
         """Remove the input file from staging.
