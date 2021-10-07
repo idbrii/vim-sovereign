@@ -465,10 +465,15 @@ class Repo(object):
 
         log(str, int) -> str
         """
-        assert p.isabs(filepath)
+        if filepath:
+            assert p.isabs(filepath)
+            rel_filepath = self._to_svnroot_relative_path(filepath)
+        else:
+            filepath = self.get_url_prefix()
+            rel_filepath = None
 
         log = self._client.log_default(
-            rel_filepath = self._to_svnroot_relative_path(filepath),
+            rel_filepath = rel_filepath,
             limit = limit,
             revision_from = revision_from,
             revision_to = revision_to,
