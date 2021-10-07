@@ -125,6 +125,15 @@ class Repo(object):
         else:
             return '?'
 
+    def get_url_prefix(self):
+        """Get the url that you could stick in front of a relative path to get
+        the repo path.
+
+        get_url_prefix() -> str
+        """
+        i = self._client.info()
+        return i['url']
+
     def _status_text(self, optional_path=None):
         """Get buffer text contents for Sstatus
 
@@ -322,10 +331,33 @@ class Repo(object):
     def _unified_diff(self, full_url_or_path, old, new, text_only=True):
         # self._client.diff() doesn't work since it tries to give us the diff
         # in a list and I don't want to put it back together again.
+        original_path = full_url_or_path
         try:
-            if text_only and self._is_binary(full_url_or_path):
+            is_url = '://' in full_url_or_path
+            is_file_missing = not p.isfile(full_url_or_path)
+            if not is_url and is_file_missing:
+                # svn isn't smart enough to info about on deleted files
+                if p.isabs(full_url_or_path):
+                    rel_path = self._to_svnroot_relative_path(full_url_or_path)
+                else:
+                    rel_path = full_url_or_path
+                full_url_or_path = self.get_url_prefix() + '/' + rel_path.replace('\\', '/')
+                is_url = True
+
+                if not new:
+                    # We're comparing the file on disk, but it's missing. Check
+                    # correct status to show.
+                    file_status = self._client.status(rel_path)
+                    for s in file_status:
+                        if s.type == svn.constants.ST_DELETED:
+                            return f"Deleted file: {original_path}\n"
+                        if s.type == svn.constants.ST_MISSING:
+                            return f"Missing file: {original_path}\n"
+
+
+            if text_only and not is_url and self._is_binary(full_url_or_path):
                 # Diffs for binary files might be huge and very slow.
-                return f"Binary file differs: {full_url_or_path}"
+                return f"Binary file differs: {original_path}"
             d = self._client.run_command(
                 'diff',
                 ['--git',
@@ -337,7 +369,7 @@ class Repo(object):
             # I think this error only occurs on windows? I'm not actually
             # seeing this output, but this prevents errors that stops Scommit
             # from working.
-            return f"New file: {full_url_or_path}\n" + str(e)
+            return f"New file: {original_path}\n" + str(e)
         # skip 'Index:' line and '===' line.
         return trim_leading_lines(d, 2)
 
@@ -684,6 +716,15 @@ def test():
     print('Sdiff')
     print(r.cat_file(trailnewline, 'HEAD'))
     print()
+
+    print("Unified diff of history for locally deleted file")
+    print(r._unified_diff(will_delete, 1, 2))
+
+    print("Unified diff of current version locally deleted file")
+    print(r._unified_diff(will_delete, 1, ''))
+
+    print("Unified diff of previously deleted file")
+    print(r._unified_diff(already_delete, 1, 2))
 
     print('Slog', hello)
     log = r.get_log_text(None)
