@@ -128,7 +128,7 @@ class Repo(object):
     def _status_text(self, optional_path=None):
         """Get buffer text contents for Sstatus
 
-        _status_text(svn.local.LocalClient, str) -> str
+        _status_text(str) -> str
         """
         # TODO: Support status for a directory since svn can be slow retrieving results from server.
 
