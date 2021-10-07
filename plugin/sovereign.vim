@@ -8,6 +8,7 @@ let loaded_sovereign = 1
 command! -bar -nargs=* -complete=file Sstatus call sovereign#status(<q-args>)
 command! -bar -nargs=* Sadd call sovereign#stage(<f-args>)
 command! -bar Scommit call sovereign#commit()
+command! -bar -nargs=* Sdelete call sovereign#delete(<bang>0, <f-args>)
 command! -bar -nargs=* Sdiff call sovereign#diff(<f-args>)
 
 " Hide diff if bang is included.

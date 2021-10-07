@@ -474,6 +474,17 @@ def on_close_commit_buffer(commit_msg_filepath):
         print('Aborting commit due to empty commit message.')
 
 
+# Sdelete {{{1
+
+@vim_error_on_fail
+def delete_file(filepath, force):
+    r = _get_repo(filepath, vim.current.buffer)
+    if r.delete_file(filepath, force=force):
+        bang = '!' if force else ''
+        vim.command('bdelete '+ bang + filepath)
+    return None
+
+
 # Sdiff {{{1
 
 @vim_error_on_fail

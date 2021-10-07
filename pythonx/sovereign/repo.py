@@ -526,6 +526,25 @@ Date:   {date}
         return 'sovereign' + name[colon:]
 
 
+    def _is_file_tracked(self, rel_path):
+        assert not p.isabs(rel_path)
+        try:
+            i = self._client.info(rel_path=rel_path)
+            return True
+        except svn.exception.SvnException:
+            return False
+
+
+    def delete_file(self, filepath, force=False):
+        assert p.isabs(filepath)
+        rel_path = self._to_svnroot_relative_path(filepath)
+        if not self._is_file_tracked(rel_path):
+            raise SvnError("Cannot delete untracked file '{}'".format(filepath))
+        self._client.remove(rel_path=rel_path, do_force=force)
+        self.request_stage(filepath)
+        return True
+        
+
 def _find_svnroot_for_file(working_copy_file):
     """Find svn root dir for the working_copy_file
 
@@ -583,9 +602,13 @@ def test():
     trailnewline = p.join(repo_root, 'subdir/hastrailingnewline')
     file_for_cl1 = p.join(repo_root, 'subdir/file_for_cl1')
     file_for_cl2 = p.join(repo_root, 'subdir/file_for_cl2')
+    already_delete = p.join(repo_root, 'subdir/already_delete')
+    will_delete = p.join(repo_root, 'subdir/will_delete')
     files = [hello, modified_by_test, nestedhi, trailnewline, file_for_cl1, file_for_cl2]
     if not all(p.isfile(f) for f in files):
         if allow_commit:
+            files.append(already_delete)
+            files.append(will_delete)
             # Setup test case
             subdir = p.join(repo_root, 'subdir')
             os.makedirs(subdir, exist_ok=True)
@@ -594,7 +617,14 @@ def test():
                 with open(fpath, 'w', encoding='utf8') as f:
                     f.write("hello\n")
                 r.request_stage(fpath)
-            r.commit(io.StringIO("setup repo\n\nlonger message goes here\n"))
+            r.commit(io.StringIO("setup repo - create\n\nlonger message goes here\n"))
+            with open(already_delete, 'w', encoding='utf8') as f:
+                f.write("modifying this file\n")
+                f.write("\n")
+            r.request_stage(already_delete)
+            r.commit(io.StringIO("setup repo - modify\n\nmodifying a file\n"))
+            r.delete_file(already_delete)
+            r.commit(io.StringIO("setup repo - delete\n\ndeleting a file\n"))
             print('Created test svn repo.')
         else:
             print('Error: test svn repo not correctly setup. please enable allow_commit')
@@ -606,6 +636,10 @@ def test():
             f.write("modifying this file\n")
             f.write(str(datetime.datetime.now()))
             f.write("\n")
+    try:
+        os.remove(will_delete)
+    except FileNotFoundError:
+        pass
 
     r._client.run_command('changelist', ['my-cl', file_for_cl1])
     r._client.run_command('changelist', ['another-cl', file_for_cl2])
@@ -628,6 +662,9 @@ def test():
     print()
 
     print('Scommit buffer')
+    print(r._commit_text())
+    print('Scommit buffer with deleted file')
+    r.request_stage(will_delete)
     print(r._commit_text())
     print()
     if allow_commit:

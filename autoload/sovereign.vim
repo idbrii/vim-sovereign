@@ -144,6 +144,14 @@ function! sovereign#commit(...) abort
     endif
 endfunction
 
+function! sovereign#delete(force, ...) abort
+    let path = s:get_safe_path_from_args(a:000)
+    let cmd = printf('sovereignapi.delete_file(r"%s", %s == 1)', path, a:force)
+    if !s:pyeval(cmd)
+        return
+    endif
+endf
+
 function! sovereign#diff(...) abort
     let revision = ''
     let path = s:get_safe_path_from_args(a:000)
