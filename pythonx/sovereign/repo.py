@@ -9,6 +9,7 @@ import re
 
 try:
     import svn.local
+    import svn.remote
     import svn.exception
 except ImportError:
     print('pysvn not installed. Please run pip install -r ~/.vim/bundle/sovereign/requirements.txt')
@@ -50,6 +51,24 @@ def _prefix_lines(txt, prefix):
     lines = txt.split('\n')
     lines = [prefix + line for line in lines]
     return "\n".join(lines)
+
+
+def _convert_log_entry_to_text(entry, diff):
+    return '''r{revision}
+Author: {author}
+Date:   {date}
+
+{msg}
+
+{diff}
+            '''.format(
+                revision = entry.revision,
+                author = entry.author,
+                date = format_datetime(entry.date),
+                msg = _prefix_lines(entry.msg, ' '), # prefix to prevent syntax highlight
+                diff = diff,
+            )
+
 
 
 
@@ -133,6 +152,14 @@ class Repo(object):
         """
         i = self._client.info()
         return i['url']
+
+    def get_repo_url(self):
+        """Get the url for the repository. Useful to query logs for the entire repo.
+
+        get_repo_url() -> str
+        """
+        i = self._client.info()
+        return i['repository/root']
 
     def _status_text(self, optional_path=None):
         """Get buffer text contents for Sstatus
@@ -526,20 +553,7 @@ class Repo(object):
 
 
         qf_items = [{
-            'filecontents': '''r{revision}
-Author: {author}
-Date:   {date}
-
-{msg}
-
-{diff}
-            '''.format(
-                revision = entry.revision,
-                author = entry.author,
-                date = format_datetime(entry.date),
-                msg = _prefix_lines(entry.msg, ' '), # prefix to prevent syntax highlight
-                diff = get_diff(entry),
-            ),
+            'filecontents': _convert_log_entry_to_text(entry, get_diff(entry)),
             'col': 0,
             'lnum': 0,
             'module': f'r{entry.revision}',
@@ -551,6 +565,28 @@ Date:   {date}
             'vcol': 0,
         } for entry in log]
         return qf_items
+
+
+    def get_revision_info(self, revision, include_diff=True):
+        revision = str(revision)
+        # In theory, you could use get_log_text instead of this function,
+        # except it would be based on the checkout's root instead of the repo's
+        # root. This queries the repository directly. TODO: Remove this
+        # function and implement get_log_text with RemoteClient. Do the same
+        # for commands where we aren't looking at local files.
+
+        # Create a new client from the repo url to ensure revision checking
+        # works for any revision and not just ones in our subfolder.
+        url = self.get_repo_url()
+        client = svn.remote.RemoteClient(url)
+        log = client.log_default(revision_from=revision, revision_to=revision, limit=1)
+        lines = [_convert_log_entry_to_text(entry, '') for entry in log]
+        lines = [line.splitlines() for line in lines] # ensure no embedded newlines
+        lines = list(itertools.chain.from_iterable(lines))
+        # _unified_diff is too tied to self and our local client. Do a dumb diff instead.
+        diff = client.run_command('diff', ['-c', revision, url])
+        lines += [""] * 2 + diff
+        return lines
 
 
     def get_buffer_name_for_file(self, filepath, revision):

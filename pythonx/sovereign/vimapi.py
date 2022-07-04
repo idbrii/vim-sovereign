@@ -574,13 +574,10 @@ def setup_show_revision(filepath, revision):
     if items:
         contents = items[0]['filecontents'].split('\n')
     else:
-        # Either invalid revision or it doesn't exist in our branch.
-        #
-        # Need to create an LocalClient from the url instead of local path to
-        # see changes from other branches. That's a bunch of work that doesn't
-        # currently seem worthwhile right now.
-        # url = r._client.info()['repository/root']
-        contents = [f'Failed to find revision r{revision}']
+        contents = r.get_revision_info(revision)
+        if not contents:
+            # Either invalid revision format or it doesn't exist.
+            contents = [f'Failed to find revision r{revision}']
 
     bufnr = _create_scratch_buffer(contents, 'diff', filepath, should_stay_open=False)
     # We close and then open it so it replaces the current buffer and we can
