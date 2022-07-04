@@ -18,3 +18,5 @@ command! -bar -nargs=* -count=10 -bang Sllog call sovereign#log(<count>, <bang>1
 " No Args: go back to normal file (if known)
 " With Args: pass a revision and we'll show its details
 command! -bar -nargs=? Sedit call sovereign#edit(<q-args>)
+" Synonym for Sedit that expects a revision
+command! -bar -nargs=1 Sshow call sovereign#edit(<q-args>)
