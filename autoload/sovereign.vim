@@ -177,6 +177,22 @@ function! sovereign#diff(...) abort
     norm! ggzt
 endfunction
 
+function! sovereign#revert(...) abort
+    let revision = ''
+    let path = s:get_safe_path_from_args(a:000)
+    if len(a:000) > 1
+        let revision = a:000[1]
+    endif
+
+    let winview = winsaveview()
+    let cmd = printf('sovereignapi.cat_to_current_buffer(r"%s", r"%s")', path, revision)
+    if !s:pyeval(cmd)
+        undo
+        return
+    endif
+    call winrestview(winview)
+endfunction
+
 function! sovereign#log(limit, showdiff, prefix, ...) abort
     let path = s:get_safe_path_from_args(a:000)
     let g:sovereign_scratch = a:000[1:]

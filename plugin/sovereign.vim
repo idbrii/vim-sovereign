@@ -10,6 +10,7 @@ command! -bar -nargs=* Sadd call sovereign#stage(<f-args>)
 command! -bar Scommit call sovereign#commit()
 command! -bar -nargs=* Sdelete call sovereign#delete(<bang>0, <f-args>)
 command! -bar -nargs=* Sdiff call sovereign#diff(<f-args>)
+command! -bar -nargs=* Srevert call sovereign#revert(<f-args>)
 
 " Hide diff if bang is included.
 command! -bar -nargs=* -count=10 -bang Sclog call sovereign#log(<count>, <bang>1, 'c', <f-args>)

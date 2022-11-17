@@ -120,6 +120,17 @@ def _create_scratch_buffer(contents, filetype, originating_filepath, should_stay
         vim.command('close')
     return bufnr
 
+def _to_revision(revision):
+    if not revision or revision == 'HAVE':
+        # Default to HAVE revision.
+        revision = None
+    return revision
+
+def _cat_to_buffer(b, filepath, revision):
+    r = _get_repo(filepath, vim.current.buffer)
+    b[:] = r.cat_file_as_list(filepath, revision)
+    return b, r
+
 
 # statusline {{{1
 
@@ -485,17 +496,21 @@ def delete_file(filepath, force):
     return None
 
 
+# Srevert {{{1
+
+@vim_error_on_fail
+def cat_to_current_buffer(filepath, revision):
+    revision = _to_revision(revision)
+    _cat_to_buffer(vim.current.buffer, filepath, revision)
+    return None
+
+
 # Sdiff {{{1
 
 @vim_error_on_fail
 def setup_buffer_cat(filepath, revision):
-    if not revision or revision == 'HAVE':
-        # Default to HAVE revision.
-        revision = None
-
-    r = _get_repo(filepath, vim.current.buffer)
-    b = vim.current.buffer
-    b[:] = r.cat_file_as_list(filepath, revision)
+    revision = _to_revision(revision)
+    b, r = _cat_to_buffer(vim.current.buffer, filepath, revision)
     b.options['modifiable'] = False
     b.options['bufhidden'] = 'delete'
     b.name = r.get_buffer_name_for_file(filepath, revision)
