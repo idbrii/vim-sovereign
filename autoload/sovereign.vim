@@ -104,7 +104,7 @@ function! sovereign#branch_name() abort
         return s:sovereign_branch_cached
     endif
     
-    let path = s:to_python_safe_path('%')
+    let path = s:to_python_safe_path(expand('%'))
     let cmd = printf('sovereignapi.get_branch(r"%s")', path)
     if !s:pyeval(cmd)
         return '--'
@@ -191,6 +191,19 @@ function! sovereign#revert(...) abort
         return
     endif
     call winrestview(winview)
+endfunction
+
+function! sovereign#sync_file(...) abort
+    let revision = ''
+    let path = s:to_python_safe_path(expand('%'))
+    if !empty(a:000)
+        let revision = a:000[0]
+    endif
+
+    let cmd = printf('sovereignapi.sync_file(r"%s", r"%s")', path, revision)
+    if !s:pyeval(cmd)
+        return
+    endif
 endfunction
 
 function! sovereign#log(limit, showdiff, prefix, ...) abort

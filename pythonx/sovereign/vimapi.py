@@ -121,8 +121,9 @@ def _create_scratch_buffer(contents, filetype, originating_filepath, should_stay
     return bufnr
 
 def _to_revision(revision):
+    """Don't pass empty string revisions to svn"""
     if not revision or revision == 'HAVE':
-        # Default to HAVE revision.
+        # HAVE is generally passed as None (except for update).
         revision = None
     return revision
 
@@ -514,6 +515,22 @@ def setup_buffer_cat(filepath, revision):
     b.options['modifiable'] = False
     b.options['bufhidden'] = 'delete'
     b.name = r.get_buffer_name_for_file(filepath, revision)
+    return None
+
+
+# Supdate {{{1
+
+@vim_error_on_fail
+def sync_file(filepath, revision):
+    revision = _to_revision(revision or "HEAD")
+    r = _get_repo(filepath, vim.current.buffer)
+    r.update(filepath, revision)
+    if vim.options['autoread']:
+        vim.command("silent checktime")
+    else:
+        vim.command("silent edit")
+    # This echo disappears too quickly for me to see, so add to messages.
+    vim.command(f"echomsg 'Updated {filepath}#{revision}'")
     return None
 
 

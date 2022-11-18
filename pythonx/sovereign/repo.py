@@ -471,7 +471,7 @@ class Repo(object):
 
         update() -> None
         """
-        if not single_file:
+        if single_file:
             single_file = [single_file]
         else:
             single_file = []
